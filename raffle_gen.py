@@ -124,6 +124,37 @@ def embed_logo(path, max_h=200):
     return f"data:{mime};base64,{base64.b64encode(data).decode('ascii')}"
 
 
+def image_size(path):
+    """(width, height) of a PNG/JPEG/GIF via pure stdlib header parsing."""
+    with open(path, "rb") as f:
+        head = f.read(32)
+        f.seek(0)
+        data = f.read()
+    if data[:8] == b"\x89PNG\r\n\x1a\n" and len(data) > 24:
+        w = int.from_bytes(data[16:20], "big")
+        h = int.from_bytes(data[20:24], "big")
+        return w, h
+    if data[:6] in (b"GIF87a", b"GIF89a") and len(data) > 10:
+        return int.from_bytes(data[6:8], "little"), int.from_bytes(data[8:10], "little")
+    if data[:2] == b"\xff\xd8":  # JPEG: walk markers to a frame header
+        i = 2
+        while i + 9 < len(data):
+            if data[i] != 0xFF:
+                i += 1
+                continue
+            marker = data[i + 1]
+            if marker in (0xC0, 0xC1, 0xC2, 0xC3):
+                h = int.from_bytes(data[i + 5:i + 7], "big")
+                w = int.from_bytes(data[i + 7:i + 9], "big")
+                return w, h
+            if marker in (0xD8, 0x01) or 0xD0 <= marker <= 0xD7:
+                i += 2
+                continue
+            seg = int.from_bytes(data[i + 2:i + 4], "big")
+            i += 2 + seg
+    return None
+
+
 # --------------------------------------------------------------------------- #
 # HTML build
 # --------------------------------------------------------------------------- #
@@ -186,10 +217,10 @@ p, div, span { overflow-wrap: break-word; }
 }
 .logo {
   height: ${logo_h}mm;
-  width: auto;
-  max-width: 100%;
+  width: ${logo_w}mm;
   flex-shrink: 0;
   object-fit: contain;
+  ${logo_bg}
 }
 .school-name {
   font-size: ${school_pt}pt;
@@ -347,12 +378,23 @@ def build_html(a, th):
     num_pt = num_base * (a["stub_width"] / 12.0) * eff
 
     # ---- logo
+    # When embedding, the data URI goes into the CSS ONCE (not per ticket) and
+    # tickets reference it via a background-image div — keeps 480-ticket HTML
+    # at ~200 KB instead of ~20 MB.
     logo_html = ""
+    logo_bg = ""
+    aspect = 1
     if a["logo"] and not a["no_logo"]:
         if os.path.exists(a["logo"]):
-            src = (embed_logo(a["logo"]) if a["embed_logo"]
-                   else "file://" + os.path.abspath(a["logo"]))
-            logo_html = f'<img class="logo" src="{src}" alt="logo">'
+            if a["embed_logo"]:
+                uri = embed_logo(a["logo"])
+                size = image_size(a["logo"]) or (1, 1)
+                aspect = size[0] / max(1, size[1])
+                logo_bg = (f'background: url("{uri}") center / contain no-repeat;')
+                logo_html = '<div class="logo"></div>'
+            else:
+                logo_html = (f'<img class="logo" src="file://{os.path.abspath(a["logo"])}" '
+                             f'alt="logo" style="width:auto;max-width:100%;">')
         else:
             print(f"warning: logo file not found: {a['logo']!r} — continuing without it",
                   file=sys.stderr)
@@ -420,7 +462,9 @@ def build_html(a, th):
         cut_w=mm(a["cut_weight"]), cut_style=a["cut_style"], cut_color=th["cut"],
         font=th["font"],
         mp_t=mm(1.3 * pe), mp_r=mm(1.6 * pe), mp_b=mm(1.2 * pe), mp_l=mm(2.0 * pe),
-        logo_h=mm(6.2 * eff), school_pt=pt(4.6 * eff),
+        logo_h=mm(6.2 * eff), logo_w=mm(6.2 * eff * (aspect if logo_bg else 1)),
+        logo_bg=logo_bg,
+        school_pt=pt(4.6 * eff),
         ink=th["ink"], title_color=th["title"], title_pt=pt(11.5 * eff),
         class_pt=pt(7.0 * eff),
         rule_color=th["rule"], det_pt=pt(6.0 * eff), muted=th["muted"],

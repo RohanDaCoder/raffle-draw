@@ -88,7 +88,10 @@ Any single colour can be overridden, e.g. `--theme festive --accent "#b8860b"`.
    the preview image renders right inside the release notes,
 4. deploys a **GitHub Pages** live preview at
    `https://<user>.github.io/raffle-draw/` — page-1 image, the printable HTML,
-   and the PDF, all viewable directly in the browser.
+   and the PDF, all viewable directly in the browser. Pages requires the repo
+   to be **public** (or a paid plan for private repos) with Pages enabled in
+   Settings → Pages → Source: GitHub Actions; without it the workflow still
+   succeeds and the release page remains the direct preview.
 
 Change what CI builds by editing the command inside `examples/make_class9d.sh`
 (or point the workflow at your own script).
