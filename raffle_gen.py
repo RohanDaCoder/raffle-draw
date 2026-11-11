@@ -400,7 +400,12 @@ def build_html(a, th):
             print(f"warning: logo file not found: {a['logo']!r} — continuing without it",
                   file=sys.stderr)
 
-    # ---- school block (logo + name)
+    # ---- school block (logo + name); shrink the name when a big logo eats width
+    main_w = token_w - a["stub_width"] - (2.0 + 1.6) * pe
+    logo_w_eff = 6.2 * eff * a["logo_scale"] * aspect
+    avail_1x = main_w - 1.1 - 6.2 * eff * aspect
+    avail = main_w - 1.1 - logo_w_eff
+    school_scale = max(0.45, min(1.0, avail / max(avail_1x, 1)))
     school_html = ""
     if a["school"]:
         name_html = f'<div class="school-name">{lines(a["school"])}</div>'
@@ -480,7 +485,7 @@ def build_html(a, th):
         logo_h=mm(6.2 * eff * a["logo_scale"]),
         logo_w=mm(6.2 * eff * a["logo_scale"] * (aspect if logo_bg else 1)),
         logo_bg=logo_bg,
-        school_pt=pt(4.6 * eff),
+        school_pt=pt(4.6 * eff * school_scale),
         ink=th["ink"], title_color=th["title"], title_pt=pt(11.5 * eff),
         class_pt=pt(7.0 * eff),
         rule_color=th["rule"], det_pt=pt(6.0 * eff), muted=th["muted"],
