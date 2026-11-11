@@ -206,6 +206,7 @@ p, div, span { overflow-wrap: break-word; }
   display: flex;
   flex-direction: column;
   padding: ${mp_t}mm ${mp_r}mm ${mp_b}mm ${mp_l}mm;
+  ${main_border_css}
 }
 .token.stub-left .main { padding: ${mp_t}mm ${mp_l}mm ${mp_b}mm ${mp_r}mm; }
 
@@ -408,7 +409,7 @@ def build_html(a, th):
     elif logo_html:
         school_html = f'        <div class="school">{logo_html}</div>\n'
 
-    # ---- details rows (price / draw date)
+    # ---- details rows (price / draw date / body number)
     det_rows = []
     if a["price"] not in ("", "none", "None"):
         det_rows.append(f'          <div class="drow">{esc(a["price_label"])}: '
@@ -421,6 +422,10 @@ def build_html(a, th):
         else:
             det_rows.append(f'          <div class="drow">{esc(a["draw_date_label"])}: '
                             f'<span class="val">{esc(dd)}</span></div>')
+    if a["split_stub"]:
+        # number on the buyer's half too, so the winning stub can be matched;
+        # literal {num} is expanded after .format() like the stub number
+        det_rows.append('          <div class="drow">No. <span class="val">{num}</span></div>')
     if det_rows:
         rule_details = ('\n        <div class="rule"></div>\n'
                         '        <div class="details">\n'
@@ -451,10 +456,19 @@ def build_html(a, th):
     stub_no += '          <div class="stub-num">{num}</div>\n        </div>\n'
 
     stub_border_css = ""
-    if th["stub_border_w"] > 0:
-        side = "left" if a["stub_side"] == "right" else "right"
-        stub_border_css = (f"border-{side}: {mm(th['stub_border_w'])}mm "
+    boundary = "left" if a["stub_side"] == "right" else "right"
+    if th["stub_border_w"] > 0 and not a["split_stub"]:
+        stub_border_css = (f"border-{boundary}: {mm(th['stub_border_w'])}mm "
                            f"solid {th['ink']};")
+    # Tear line between the buyer's half and the jar stub. Drawn on the WHITE
+    # body element, not on the gradient stub: a dashed border on a gradient
+    # background forces Chromium to emit thousands of tiny path segments
+    # (8 MB PDFs instead of ~1 MB).
+    main_border_css = ""
+    if a["split_stub"]:
+        side = "right" if a["stub_side"] == "right" else "left"
+        main_border_css = (f"border-{side}: {mm(a['cut_weight'])}mm "
+                           f"{a['cut_style']} {th['cut']};")
 
     css = CSS_TMPL.substitute(
         pw=mm(pw), ph=mm(ph), margin=mm(margin),
@@ -462,6 +476,7 @@ def build_html(a, th):
         cut_w=mm(a["cut_weight"]), cut_style=a["cut_style"], cut_color=th["cut"],
         font=th["font"],
         mp_t=mm(1.3 * pe), mp_r=mm(1.6 * pe), mp_b=mm(1.2 * pe), mp_l=mm(2.0 * pe),
+        main_border_css=main_border_css,
         logo_h=mm(6.2 * eff), logo_w=mm(6.2 * eff * (aspect if logo_bg else 1)),
         logo_bg=logo_bg,
         school_pt=pt(4.6 * eff),
@@ -665,6 +680,11 @@ tips:
                    metavar="MM", help="number-stub width (default %(default)s)")
     g.add_argument("--stub-side", default="right", choices=["right", "left"],
                    help="which side of the ticket carries the stub (default %(default)s)")
+    g.add_argument("--split-stub", dest="split_stub", action=argparse.BooleanOptionalAction,
+                   default=False,
+                   help="two-part ticket: dashed tear line between body and stub, "
+                        "number on BOTH halves — at sale time the stub drops into "
+                        "the jar and the buyer keeps the body (default: %(default)s)")
 
     g = ap.add_argument_group("style")
     g.add_argument("--theme", default="festive", choices=sorted(THEMES),

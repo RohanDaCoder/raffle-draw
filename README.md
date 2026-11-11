@@ -39,8 +39,28 @@ either way **print at 100% scale (Actual Size)** and cut along the dashed lines.
 bash examples/make_class9d.sh     # -> dist/raffle_tickets.{html,pdf}, dist/preview.png
 ```
 
-480 tickets · Class 9 · Section D · Tk 10 · Civil Aviation School & College, Kurmitola ·
+480 two-part tickets · Class 9 · Section D · Tk 10 · Civil Aviation School & College, Kurmitola ·
 12 full A4 sheets, festive aviation-blue theme matched to the school logo.
+
+## Running the draw
+
+With `--split-stub` every ticket is two parts sharing one number:
+
+1. **Keep the sheets whole** until a ticket is sold — an unsold ticket never
+   produces a stub, so the jar can only ever contain *bought* numbers.
+2. **At sale**: cut the ticket off the sheet, separate body and stub along the
+   middle dashed line (scissors, or fold-then-tear), give the buyer the body
+   (it carries `No. XXX`), drop the stub in the jar immediately.
+3. **Draw**: pull one stub, read the big number, match it against the buyer's
+   body half, award the prize. For several prizes, keep drawing without
+   putting stubs back — one ticket can win only once.
+4. **Reconcile** (optional but wise): count the stubs in the jar at the end —
+   stubs × ticket price should equal the cash collected.
+
+Alternative (no tearing): keep one-piece tickets, have sellers write each sold
+number on a list, and draw numbers from folded paper slips — but the two-part
+ticket is the classic for a reason: no extra bookkeeping, no transcription
+errors, and the jar stays self-auditing.
 
 ## Options
 
@@ -52,7 +72,7 @@ every long option can also be set in a JSON file passed with `--config`
 |---|---|
 | **Content** | `--title` · `--school "LINE1\|LINE2"` · `--class-line` · `--party "2026\|CLASS PARTY"` (stub text, year larger) · `--price "Tk 10"` / `--price none` · `--price-label` · `--draw-date "15 Dec 2026"` / `_` = blank line / omitted = hidden · `--draw-date-label` · `--logo FILE` · `--no-logo` · `--embed-logo/--no-embed-logo` (base64, default on) · `--number-label` |
 | **Numbering** | `--count N` · `--sheets N` (N full sheets instead of a count) · `--start` · `--pad` (auto-widened if too small) · `--number-prefix/--number-suffix` |
-| **Layout** | `--cols` / `--rows` (grid per sheet) · `--page a3\|a4\|a5\|a6\|letter\|legal\|tabloid` or `210x297` mm · `--margin` · `--stub-width` · `--stub-side right\|left` |
+| **Layout** | `--cols` / `--rows` (grid per sheet) · `--page a3\|a4\|a5\|a6\|letter\|legal\|tabloid` or `210x297` mm · `--margin` · `--stub-width` · `--stub-side right\|left` · `--split-stub` (two-part ticket: tear line + number on both halves) |
 | **Style** | `--theme festive\|classic\|carnival\|bw` · `--accent/--ink/--muted/--cut-color` · `--cut-style dashed\|solid\|none` · `--cut-weight` · `--font-family` · `--webfonts/--no-webfonts` · `--font-scale` (auto-reduced when tickets are smaller than the reference 4×10 A4 design) · `--blank-width` |
 | **Output** | `--html` · `--pdf` · `--preview` (PNG of sheet 1) · `--quiet` |
 
