@@ -477,7 +477,8 @@ def build_html(a, th):
         font=th["font"],
         mp_t=mm(1.3 * pe), mp_r=mm(1.6 * pe), mp_b=mm(1.2 * pe), mp_l=mm(2.0 * pe),
         main_border_css=main_border_css,
-        logo_h=mm(6.2 * eff), logo_w=mm(6.2 * eff * (aspect if logo_bg else 1)),
+        logo_h=mm(6.2 * eff * a["logo_scale"]),
+        logo_w=mm(6.2 * eff * a["logo_scale"] * (aspect if logo_bg else 1)),
         logo_bg=logo_bg,
         school_pt=pt(4.6 * eff),
         ink=th["ink"], title_color=th["title"], title_pt=pt(11.5 * eff),
@@ -644,6 +645,9 @@ tips:
     g.add_argument("--draw-date-label", default="Draw Date", dest="draw_date_label",
                    metavar="TEXT")
     g.add_argument("--logo", default="", metavar="PATH", help="logo image (PNG/JPG)")
+    g.add_argument("--logo-scale", type=float, default=1.0, dest="logo_scale",
+                   metavar="X", help="logo size multiplier; base height is 6.2 mm "
+                   "before auto-shrink (default %(default)s)")
     g.add_argument("--no-logo", dest="no_logo", action="store_true",
                    help="never draw a logo")
     g.add_argument("--embed-logo", dest="embed_logo", action=argparse.BooleanOptionalAction,

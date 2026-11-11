@@ -14,6 +14,7 @@ python3 raffle_gen.py \
   --party "2026|CLASS PARTY" \
   --price "Tk 10" \
   --logo examples/casck_logo.png \
+  --logo-scale 1.2 \
   --split-stub \
   --html dist/raffle_tickets.html \
   --pdf  dist/raffle_tickets.pdf \
