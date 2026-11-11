@@ -37,7 +37,9 @@ jobs:
           python -m playwright install chromium --with-deps
 
       - name: Generate raffle sheets
-        run: bash examples/make_class9d.sh
+        run: |
+          bash examples/make_class9d.sh
+          bash examples/make_vip.sh
 
       - name: Create GitHub release
         env:
@@ -55,9 +57,12 @@ jobs:
 
           | File | What it is |
           |---|---|
-          | \`raffle_tickets.pdf\` | 12 A4 sheets, 480 tickets — print at 100% scale |
-          | \`raffle_tickets.html\` | Self-contained printable HTML (same sheets) |
-          | \`preview.png\` | Page 1 preview image |
+          | \`raffle_tickets.pdf\` | 12 A4 sheets, 480 standard tickets — print at 100% scale |
+          | \`raffle_tickets.html\` | Self-contained printable HTML (standard) |
+          | \`preview.png\` | Standard sheet, page 1 preview |
+          | \`vip_tickets.pdf\` | VIP pre-order sheets (named, gold) |
+          | \`vip_tickets.html\` | Self-contained printable HTML (VIP) |
+          | \`vip_preview.png\` | VIP sheet, page 1 preview |
 
           Live preview site: **https://${REPO%%/*}.github.io/${REPO#*/}/**
           (requires GitHub Pages — public repo or paid plan; the preview above
@@ -66,6 +71,7 @@ jobs:
           )
           gh release create "$TAG" \
             dist/raffle_tickets.pdf dist/raffle_tickets.html dist/preview.png \
+            dist/vip_tickets.pdf dist/vip_tickets.html dist/vip_preview.png \
             --repo "$REPO" \
             --title "Raffle sheets — build ${{ github.run_number }}" \
             --notes "$NOTES"
@@ -76,6 +82,9 @@ jobs:
           cp dist/raffle_tickets.html site/sheet.html
           cp dist/raffle_tickets.pdf   site/raffle_tickets.pdf
           cp dist/preview.png         site/preview.png
+          cp dist/vip_tickets.html    site/vip.html
+          cp dist/vip_tickets.pdf     site/vip_tickets.pdf
+          cp dist/vip_preview.png    site/vip_preview.png
           cat > site/index.html <<'EOF'
           <!doctype html>
           <html lang="en">
@@ -88,9 +97,11 @@ jobs:
                    background: #f4f7fb; color: #12283f; }
             main { max-width: 860px; margin: auto; }
             h1 { font-size: 22px; margin: 0 0 4px; }
+            h2 { font-size: 17px; margin: 28px 0 4px; }
             p.sub { color: #46607a; margin-top: 0; }
             a.btn { display: inline-block; background: #1258a7; color: #fff; padding: 10px 18px;
                     border-radius: 6px; text-decoration: none; margin: 12px 8px 16px 0; }
+            a.btn.gold { background: #b8860b; }
             img { width: 100%; border: 1px solid #cbd7e6; border-radius: 8px;
                   box-shadow: 0 2px 14px rgba(18,52,84,.12); display: block; }
           </style>
@@ -98,10 +109,15 @@ jobs:
           <body>
           <main>
             <h1>Raffle Draw — Class 9 · Section D</h1>
-            <p class="sub">480 tickets · Tk 10 · 12 A4 sheets · auto-built from the latest commit on main.</p>
+            <p class="sub">480 standard tickets (Tk 10) + VIP pre-orders (named, gold) · auto-built from the latest commit on main.</p>
+            <h2>Standard — Tk 10</h2>
             <a class="btn" href="raffle_tickets.pdf">Open PDF</a>
             <a class="btn" href="sheet.html">Printable HTML</a>
-            <img src="preview.png" alt="Page 1 preview of the raffle ticket sheet">
+            <img src="preview.png" alt="Standard ticket sheet, page 1">
+            <h2>VIP pre-orders — named, gold</h2>
+            <a class="btn gold" href="vip_tickets.pdf">Open VIP PDF</a>
+            <a class="btn gold" href="vip.html">Printable HTML</a>
+            <img src="vip_preview.png" alt="VIP ticket sheet, page 1">
           </main>
           </body>
           </html>

@@ -27,7 +27,7 @@ import sys
 from html import escape as esc
 from string import Template
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 PAGE_SIZES = {  # width x height in mm, portrait
     "a3": (297.0, 420.0), "a4": (210.0, 297.0), "a5": (148.0, 210.0),
@@ -64,6 +64,14 @@ THEMES = {
         stub_border_w=0.3, stub_sep="rgba(0,0,0,0.45)",
         cut="#999999", rule="#cccccc", muted="#444444",
         ink="#000000", title="#000000", accent="#000000"),
+    "gold": dict(
+        font="'Inter','Segoe UI','Helvetica Neue',Arial,'Noto Sans SC',sans-serif",
+        webfont="Inter:wght@400;600;700;800;900",
+        stub_bg="linear-gradient(180deg, #f2c94c 0%, #c9971c 100%)",
+        stub_text="#2b2000",
+        stub_border_w=0.0, stub_sep="rgba(43,32,0,0.4)",
+        cut="#d9c47a", rule="#f0e3b8", muted="#6b5a26",
+        ink="#2b2410", title="#9a7200", accent="#b8860b"),
 }
 
 # --------------------------------------------------------------------------- #
@@ -98,6 +106,27 @@ def parse_page(spec):
 def lines(text):
     """Split on '|' into escaped lines joined by <br>."""
     return "<br>".join(esc(part) for part in text.split("|"))
+
+
+def parse_names(path):
+    """Read a names file: one holder per line, in ticket-number order.
+
+    '#' lines are comments, '-' prints a blank fill-in line, blank lines are
+    skipped. Returns a list of strings / None (blank fill-in).
+    """
+    if not path:
+        return []
+    if not os.path.exists(path):
+        print(f"warning: names file not found: {path!r}", file=sys.stderr)
+        return []
+    out = []
+    with open(path, encoding="utf-8") as f:
+        for ln in f:
+            s = ln.strip()
+            if not s or s.startswith("#"):
+                continue
+            out.append(None if s == "-" else s)
+    return out
 
 
 def embed_logo(path, max_h=200):
@@ -271,6 +300,17 @@ p, div, span { overflow-wrap: break-word; }
   color: ${accent};
   letter-spacing: 0.03em;
 }
+.drow.name-row {
+  font-size: ${name_pt}pt;
+  font-weight: 700;
+  color: ${ink};
+  margin-top: 0.6mm;
+}
+.name-row .name-val {
+  font-weight: 800;
+  color: ${accent};
+  letter-spacing: 0.03em;
+}
 .blank {
   display: inline-block;
   width: ${blank_w}mm;
@@ -344,7 +384,7 @@ p, div, span { overflow-wrap: break-word; }
 TOKEN_TMPL = """    <div class="token{cls}">
       <div class="main">
 {school}        <div class="title">{title}</div>
-{class_line}{rule_details}      </div>
+{class_line}@@NAMEROW@@{rule_details}      </div>
       <div class="stub">
 {stub_party}{stub_sep}{stub_no}      </div>
     </div>"""
@@ -364,6 +404,27 @@ def build_html(a, th):
     # auto-shrink type when tickets get smaller than the reference design
     eff = a["font_scale"] * min(1.0, token_h / 28.5, token_w / 49.5)
     eff = max(0.35, eff)
+
+    # vertical auto-fit: the name row (and any extra detail rows) make the
+    # content stack taller than the fixed cell; scale everything down so the
+    # tallest possible ticket still fits its cell.
+    names_list = a.get("names_list") or []
+    has_names = bool(names_list)
+    n_det = ((1 if a["price"] not in ("", "none", "None") else 0)
+             + (1 if a["draw_date"] not in (None, "", "none", "None") else 0)
+             + (1 if a["split_stub"] else 0))
+    school_lines = (a["school"].count("|") + 1) if a["school"] else 0
+    school_h_per_eff = max(6.2 * a["logo_scale"],
+                           school_lines * 4.6 * 0.3528 * 1.38)
+    stack_a = (school_h_per_eff
+               + 11.5 * 0.3528            # title, line-height 1
+               + 7 * 0.3528 * 1.25        # class line
+               + (7 * 0.3528 * 1.3 if has_names else 0)
+               + n_det * 6 * 0.3528 * 1.55)
+    stack_b = (1.2 + 0.8 + (0.6 if has_names else 0) + 0.25 + 1.0 + 1.3 + 1.2)
+    if stack_a * eff + stack_b > token_h:
+        eff = max(0.4, (token_h - stack_b) / stack_a)
+
     pe = max(0.55, eff)
 
     pad = a["pad"]
@@ -494,10 +555,29 @@ def build_html(a, th):
         stub_border_css=stub_border_css,
         sp_t=mm(2.1 * pe), party_pt=pt(4.8 * eff), yr_pt=pt(5.6 * eff),
         stub_sep=th["stub_sep"], nolabel_pt=pt(4.2 * eff), num_pt=pt(num_pt),
+        name_pt=pt(7.0 * eff),
         w_px=round(pw / 25.4 * 96), h_px=round(ph / 25.4 * 96),
     )
 
     # ---- sheets
+    label_txt = (esc(a["name_label"]) + " ") if a["name_label"] else ""
+    label_len = len(a["name_label"]) + 1 if a["name_label"] else 0
+    avail_name_mm = max(8.0, token_w - a["stub_width"] - (2.0 + 1.6) * pe - 1.0)
+
+    def name_row(gi):
+        if gi >= len(names_list):
+            return ""
+        nm = names_list[gi]
+        if nm is None:
+            return (f'        <div class="drow name-row">{label_txt}'
+                    f'<span class="blank"></span></div>\n')
+        # shrink long names so they never leave the ticket
+        size = min(7.0 * eff,
+                   avail_name_mm / max(1.0, (label_len + len(nm)) * 0.194))
+        size = max(3.5, size)
+        return (f'        <div class="drow name-row" style="font-size: {pt(size)}pt">'
+                f'{label_txt}<span class="name-val">{esc(nm)}</span></div>\n')
+
     sheets = math.ceil(count / per_page)
     pages = []
     for s in range(sheets):
@@ -522,7 +602,9 @@ def build_html(a, th):
                 stub_party=stub_party, stub_sep=stub_sep, stub_no=stub_no,
             )
             # {num} sits inside the stub_no value, so expand it after .format()
-            toks.append(tok.replace("{num}", fmt(a["start"] + s * per_page + i)))
+            tok = tok.replace("{num}", fmt(a["start"] + s * per_page + i))
+            tok = tok.replace("@@NAMEROW@@", name_row(s * per_page + i))
+            toks.append(tok)
         pages.append(
             '  <div class="page">\n'
             f'    <div class="grid" style="height: {mm(gh_s)}mm; '
@@ -620,11 +702,15 @@ def build_parser():
   %(prog)s --theme bw --no-logo --price "Tk 10" --pdf tickets.pdf
   %(prog)s --page letter --cols 5 --rows 8 --count 200 --preview p.png
   %(prog)s --config myraffle.json --pdf tickets.pdf
+  %(prog)s --theme gold --title "VIP TICKET" --names vip_names.txt \\
+      --name-label "" --start 481 --pdf vip.pdf
 
 tips:
   * multi-line texts: separate lines with '|'  (e.g. --school "SCHOOL A|& COLLEGE")
   * --draw-date "_" prints a blank fill-in line; omit it to hide the row
   * --price none hides the price row
+  * --names FILE prints a holder name on each ticket (VIP / pre-orders);
+    count then defaults to the number of names in the file
   * values that start with '-' need '=' syntax:  --number-suffix=-Z
   * PDF/preview need:  pip install playwright && python -m playwright install chromium
 """,
@@ -661,6 +747,13 @@ tips:
                         "(default: %(default)s)")
     g.add_argument("--number-label", default="NO.", dest="number_label", metavar="TEXT",
                    help='label above the stub number; "" hides it')
+    g.add_argument("--names", default="", metavar="FILE",
+                   help="holder names file, one per line in ticket-number order; "
+                        "'#' comments, '-' = blank fill-in line; ticket i gets "
+                        "line i; count defaults to the number of names")
+    g.add_argument("--name-label", default="Name", dest="name_label", metavar="TEXT",
+                   help='label before the holder name; "" shows the name alone '
+                        '(default %(default)s)')
 
     g = ap.add_argument_group("numbering")
     g.add_argument("--count", type=int, default=None, metavar="N",
@@ -766,11 +859,22 @@ def main():
 
     apply_config(ap, args)
 
+    args.names_list = parse_names(args.names)
+
     per_page = args.cols * args.rows
     if args.count is None:
-        args.count = args.sheets * per_page if args.sheets else 40
+        if args.names_list:
+            args.count = len(args.names_list)
+        elif args.sheets:
+            args.count = args.sheets * per_page
+        else:
+            args.count = 40
     if args.count < 1:
-        sys.exit("error: --count must be >= 1")
+        sys.exit("error: --count must be >= 1"
+                 + (" (names file has no entries)" if args.names else ""))
+    if args.names_list and len(args.names_list) > args.count:
+        print(f"warning: names file has {len(args.names_list)} entries but only "
+              f"{args.count} tickets — extras ignored", file=sys.stderr)
     if args.cols < 1 or args.rows < 1:
         sys.exit("error: --cols and --rows must be >= 1")
     if args.count % args.cols:
@@ -838,8 +942,9 @@ def main():
     if not args.quiet:
         sheets = math.ceil(args.count / per_page)
         pad = max(args.pad, len(str(abs(args.start + args.count - 1))))
+        named = f", {len(args.names_list)} named" if args.names_list else ""
         print(f"{args.count} tickets ({args.start:0{pad}d}–{args.start + args.count - 1:0{pad}d})"
-              f" on {sheets} sheet{'s' if sheets != 1 else ''} of {args.cols}x{args.rows}"
+              f"{named} on {sheets} sheet{'s' if sheets != 1 else ''} of {args.cols}x{args.rows}"
               f" ({args.page} {args.page_size[0]:g}x{args.page_size[1]:g}mm,"
               f" margin {args.margin:g}mm, theme {args.theme})")
         for label, p in (("html", args.html), ("pdf", args.pdf), ("preview", args.preview)):
