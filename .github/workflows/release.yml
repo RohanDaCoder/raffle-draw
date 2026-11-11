@@ -60,7 +60,7 @@ jobs:
           | \`raffle_tickets.pdf\` | 12 A4 sheets, 480 standard tickets — print at 100% scale |
           | \`raffle_tickets.html\` | Self-contained printable HTML (standard) |
           | \`preview.png\` | Standard sheet, page 1 preview |
-          | \`vip_tickets.pdf\` | VIP pre-order sheets (named, gold) |
+          | \`vip_tickets.pdf\` | VIP pre-order tickets (holder names, gold) — numbering continues after the standard run |
           | \`vip_tickets.html\` | Self-contained printable HTML (VIP) |
           | \`vip_preview.png\` | VIP sheet, page 1 preview |
 

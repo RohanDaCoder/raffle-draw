@@ -71,15 +71,30 @@ same draw:
 | Tier | Build | Numbers | Look |
 |---|---|---|---|
 | Standard | `examples/make_class9d.sh` | 001–480, Tk 10 | festive blue |
-| VIP (pre-ordered, named) | `examples/make_vip.sh` | 481+, Tk 10 | gold, holder's name printed |
+| VIP (pre-ordered, named) | `examples/make_vip.sh` | 481–495 (3 holders × 5), Tk 10 | gold, holder's name printed |
 | Teachers (optional) | see below | after VIP, Tk 50 | e.g. `classic` |
 
-**VIP**: edit `examples/vip_names.txt` — one name per line, in ticket-number
-order (`#` comments, `-` = blank fill-in line). The ticket count comes
-automatically from the number of names, so adding a pre-order is just adding
-a line and pushing. CI ships both sets in every release and on the Pages site.
-At the event, hand pre-orderers their named VIP ticket first; their stub goes
-into the jar like any other.
+**VIP**: the pre-order list is `examples/vip_list.json` — a JSON map of holder
+to ticket count:
+
+```json
+{
+  "Topu": 5,
+  "Faiyaz": 5,
+  "Nakkhatra": 5
+}
+```
+
+Numbers are assigned in file order — Topu gets 481–485, Faiyaz 486–490,
+Nakkhatra 491–495 — and the ticket total follows the file automatically, so
+adding a pre-order is just adding a line and pushing. A list form works too:
+`[{"name": "Topu", "tickets": 5}]` (bare strings mean one ticket), and
+`{"name": null, "tickets": 2}` prints blank fill-in tickets. The VIP build
+uses a 3×5 grid, so the current 15 pre-orders fill **exactly one A4 sheet
+with nothing wasted**; if the list grows past 15, raise `--rows` to the next
+multiple of 3 to keep full sheets. CI ships both sets in every release and on
+the Pages site. At the event, hand pre-orderers their named VIP ticket first;
+their stub goes into the jar like any other.
 
 **Teachers ticket** (when you decide to add it):
 
@@ -88,7 +103,7 @@ python raffle_gen.py --theme classic --title "TEACHERS TICKET" \
   --school "CIVIL AVIATION SCHOOL|& COLLEGE, KURMITOLA" \
   --class-line "Staff & Faculty" --party "2026|CLASS PARTY" \
   --price "Tk 50" --logo examples/casck_logo.png --split-stub \
-  --start 493 --count 30 --html dist/teachers.html --pdf dist/teachers.pdf
+  --start 496 --count 30 --html dist/teachers.html --pdf dist/teachers.pdf
 ```
 
 Pick `--start` right after your VIP range ends, add the build to the workflow,
@@ -102,7 +117,7 @@ every long option can also be set in a JSON file passed with `--config`
 
 | Group | Options |
 |---|---|
-| **Content** | `--title` · `--school "LINE1\|LINE2"` · `--class-line` · `--party "2026\|CLASS PARTY"` (stub text, year larger) · `--price "Tk 10"` / `--price none` · `--price-label` · `--draw-date "15 Dec 2026"` / `_` = blank line / omitted = hidden · `--draw-date-label` · `--logo FILE` · `--logo-scale X` · `--no-logo` · `--embed-logo/--no-embed-logo` (base64, default on) · `--number-label` · `--names FILE` (holder name per ticket) · `--name-label` |
+| **Content** | `--title` · `--school "LINE1\|LINE2"` · `--class-line` · `--party "2026\|CLASS PARTY"` (stub text, year larger) · `--price "Tk 10"` / `--price none` · `--price-label` · `--draw-date "15 Dec 2026"` / `_` = blank line / omitted = hidden · `--draw-date-label` · `--logo FILE` · `--logo-scale X` · `--no-logo` · `--embed-logo/--no-embed-logo` (base64, default on) · `--number-label` · `--names FILE` (VIP holder names: JSON `{"Topu": 5}` map or list of `{"name", "tickets"}`; legacy one-per-line text also works) · `--name-label` |
 | **Numbering** | `--count N` · `--sheets N` (N full sheets instead of a count) · `--start` · `--pad` (auto-widened if too small) · `--number-prefix/--number-suffix` |
 | **Layout** | `--cols` / `--rows` (grid per sheet) · `--page a3\|a4\|a5\|a6\|letter\|legal\|tabloid` or `210x297` mm · `--margin` · `--stub-width` · `--stub-side right\|left` · `--split-stub` (two-part ticket: tear line + number on both halves) |
 | **Style** | `--theme festive\|classic\|carnival\|bw\|gold` · `--accent/--ink/--muted/--cut-color` · `--cut-style dashed\|solid\|none` · `--cut-weight` · `--font-family` · `--webfonts/--no-webfonts` · `--font-scale` (auto-reduced when tickets are smaller than the reference 4×10 A4 design, or when a name row makes the stack taller than the cell) · `--blank-width` |
@@ -135,9 +150,10 @@ Any single colour can be overridden, e.g. `--theme festive --accent "#b8860b"`.
 `.github/workflows/release.yml` runs on every push to `main`:
 
 1. installs Python + Playwright/Chromium,
-2. runs `examples/make_class9d.sh`,
+2. runs `examples/make_class9d.sh` and `examples/make_vip.sh`,
 3. publishes a **GitHub Release** tagged `build-<run number>` with
-   `raffle_tickets.pdf`, `raffle_tickets.html` and `preview.png` attached —
+   `raffle_tickets.pdf`/`.html`/`preview.png` and the VIP
+   `vip_tickets.pdf`/`.html`/`vip_preview.png` attached —
    the preview image renders right inside the release notes,
 4. deploys a **GitHub Pages** live preview at
    `https://<user>.github.io/raffle-draw/` — page-1 image, the printable HTML,

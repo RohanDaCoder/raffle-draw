@@ -27,7 +27,7 @@ import sys
 from html import escape as esc
 from string import Template
 
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 
 PAGE_SIZES = {  # width x height in mm, portrait
     "a3": (297.0, 420.0), "a4": (210.0, 297.0), "a5": (148.0, 210.0),
@@ -108,25 +108,110 @@ def lines(text):
     return "<br>".join(esc(part) for part in text.split("|"))
 
 
-def parse_names(path):
-    """Read a names file: one holder per line, in ticket-number order.
+def _name_count(v, who, path):
+    """Coerce a JSON ticket count to a validated int >= 1."""
+    if isinstance(v, bool):
+        sys.exit(f"error: bad names JSON in {path!r}: ticket count for {who} "
+                 "must be a whole number")
+    if isinstance(v, int):
+        n = v
+    elif isinstance(v, float) and v.is_integer():
+        n = int(v)
+    elif isinstance(v, str) and v.strip().lstrip("+-").isdigit():
+        n = int(v.strip())
+    else:
+        sys.exit(f"error: bad names JSON in {path!r}: ticket count for {who} "
+                 f"must be a whole number, got {v!r}")
+    if n < 1:
+        sys.exit(f"error: bad names JSON in {path!r}: ticket count for {who} "
+                 f"must be >= 1 (got {n}) — remove the entry to drop a pre-order")
+    return n
 
-    '#' lines are comments, '-' prints a blank fill-in line, blank lines are
-    skipped. Returns a list of strings / None (blank fill-in).
+
+def parse_names_json(path, data):
+    """Expand names JSON into the per-ticket name list.
+
+    Accepted shapes (entries are expanded in order, each repeated by its
+    ticket count, so entry i's tickets get consecutive numbers):
+
+      {"Topu": 5, "Faiyaz": 5}                      name -> ticket count map
+      {"preorders": [{"name": "Topu", "tickets": 5}]}   wrapped list
+      [{"name": "Topu", "tickets": 5}, "Rafi"]      list; a bare string = 1
+      {"name": null, "tickets": 2}                  null/'-' name = blank
+                                                     fill-in tickets
+
+    Returns (expanded list of names / None, holder count).
+    """
+    def die(msg):
+        sys.exit(f"error: bad names JSON in {path!r}: {msg}")
+
+    if isinstance(data, dict):
+        for key in ("preorders", "names", "vip", "list", "holders"):
+            if key in data:
+                if not isinstance(data[key], list):
+                    die(f"'{key}' must be a list")
+                data = data[key]
+                break
+        else:  # plain map: {"Topu": 5}
+            data = [{"name": k, "tickets": v}
+                    for k, v in data.items()
+                    if k not in ("note", "comment", "$comment", "_comment")]
+
+    if not isinstance(data, list):
+        die('expected a name->count map, a list of entries, or {"preorders": [...]}')
+
+    out = []
+    for i, e in enumerate(data):
+        if isinstance(e, str):
+            name, n = (None if e.strip() == "-" else e), 1
+        elif isinstance(e, dict):
+            name = e.get("name")
+            if name is None or str(name).strip() in ("", "-"):
+                name = None
+            else:
+                name = str(name).strip()
+            n = e.get("tickets", e.get("count", e.get("qty", 1)))
+            n = _name_count(n, repr(name) if name else f"entry {i + 1}", path)
+        else:
+            die(f"entry {i + 1} must be a string or an object with "
+                "'name'/'tickets'")
+        out.extend([name] * n)
+    return out, len(data)
+
+
+def parse_names(path):
+    """Read a holder-names file for named (VIP / pre-order) tickets.
+
+    JSON (recommended): a name -> ticket-count map like {"Topu": 5}, or a
+    list of {"name": ..., "tickets": ...} entries (see parse_names_json).
+    Plain text (legacy): one holder per line, in ticket-number order —
+    '#' lines are comments, '-' prints a blank fill-in ticket.
+
+    Returns (list with one entry per ticket — name or None for a blank
+    fill-in — plus the number of distinct holders).
     """
     if not path:
-        return []
+        return [], 0
     if not os.path.exists(path):
         print(f"warning: names file not found: {path!r}", file=sys.stderr)
-        return []
+        return [], 0
+    raw = open(path, encoding="utf-8").read()
+    try:
+        data = json.loads(raw)
+    except ValueError:
+        if path.lower().endswith(".json"):
+            sys.exit(f"error: {path!r} is not valid JSON")
+        data = None
+    if data is not None:
+        return parse_names_json(path, data)
+
     out = []
-    with open(path, encoding="utf-8") as f:
-        for ln in f:
-            s = ln.strip()
-            if not s or s.startswith("#"):
-                continue
-            out.append(None if s == "-" else s)
-    return out
+    for ln in raw.splitlines():
+        s = ln.strip()
+        if not s or s.startswith("#"):
+            continue
+        out.append(None if s == "-" else s)
+    return out, len(out)
 
 
 def embed_logo(path, max_h=200):
@@ -419,7 +504,7 @@ def build_html(a, th):
     stack_a = (school_h_per_eff
                + 11.5 * 0.3528            # title, line-height 1
                + 7 * 0.3528 * 1.25        # class line
-               + (7 * 0.3528 * 1.3 if has_names else 0)
+               + (9 * 0.3528 * 1.3 if has_names else 0)
                + n_det * 6 * 0.3528 * 1.55)
     stack_b = (1.2 + 0.8 + (0.6 if has_names else 0) + 0.25 + 1.0 + 1.3 + 1.2)
     if stack_a * eff + stack_b > token_h:
@@ -555,7 +640,7 @@ def build_html(a, th):
         stub_border_css=stub_border_css,
         sp_t=mm(2.1 * pe), party_pt=pt(4.8 * eff), yr_pt=pt(5.6 * eff),
         stub_sep=th["stub_sep"], nolabel_pt=pt(4.2 * eff), num_pt=pt(num_pt),
-        name_pt=pt(7.0 * eff),
+        name_pt=pt(9.0 * eff),
         w_px=round(pw / 25.4 * 96), h_px=round(ph / 25.4 * 96),
     )
 
@@ -571,8 +656,9 @@ def build_html(a, th):
         if nm is None:
             return (f'        <div class="drow name-row">{label_txt}'
                     f'<span class="blank"></span></div>\n')
-        # shrink long names so they never leave the ticket
-        size = min(7.0 * eff,
+        # shrink long names so they never leave the ticket (VIP holder names
+        # print large: base 9pt, second only to the title)
+        size = min(9.0 * eff,
                    avail_name_mm / max(1.0, (label_len + len(nm)) * 0.194))
         size = max(3.5, size)
         return (f'        <div class="drow name-row" style="font-size: {pt(size)}pt">'
@@ -702,15 +788,17 @@ def build_parser():
   %(prog)s --theme bw --no-logo --price "Tk 10" --pdf tickets.pdf
   %(prog)s --page letter --cols 5 --rows 8 --count 200 --preview p.png
   %(prog)s --config myraffle.json --pdf tickets.pdf
-  %(prog)s --theme gold --title "VIP TICKET" --names vip_names.txt \\
+  %(prog)s --theme gold --title "VIP TICKET" --names vip_list.json \\
       --name-label "" --start 481 --pdf vip.pdf
 
 tips:
   * multi-line texts: separate lines with '|'  (e.g. --school "SCHOOL A|& COLLEGE")
   * --draw-date "_" prints a blank fill-in line; omit it to hide the row
   * --price none hides the price row
-  * --names FILE prints a holder name on each ticket (VIP / pre-orders);
-    count then defaults to the number of names in the file
+  * --names FILE prints a holder name on each ticket (VIP / pre-orders):
+    JSON (recommended) — a name -> ticket-count map like {"Topu": 5} or a
+    list of {"name": ..., "tickets": ...} entries; a legacy one-name-per-line
+    text file also works; count defaults to the total ticket count
   * values that start with '-' need '=' syntax:  --number-suffix=-Z
   * PDF/preview need:  pip install playwright && python -m playwright install chromium
 """,
@@ -748,9 +836,12 @@ tips:
     g.add_argument("--number-label", default="NO.", dest="number_label", metavar="TEXT",
                    help='label above the stub number; "" hides it')
     g.add_argument("--names", default="", metavar="FILE",
-                   help="holder names file, one per line in ticket-number order; "
-                        "'#' comments, '-' = blank fill-in line; ticket i gets "
-                        "line i; count defaults to the number of names")
+                   help="holder names for named (VIP) tickets: JSON — either a "
+                        "name -> ticket-count map like {\"Topu\": 5} or a list "
+                        "of {\"name\": ..., \"tickets\": ...} entries (also "
+                        "wrapped as {\"preorders\": [...]}); a one-name-per-line "
+                        "text file still works. Tickets are numbered in file "
+                        "order; count defaults to the total")
     g.add_argument("--name-label", default="Name", dest="name_label", metavar="TEXT",
                    help='label before the holder name; "" shows the name alone '
                         '(default %(default)s)')
@@ -859,7 +950,7 @@ def main():
 
     apply_config(ap, args)
 
-    args.names_list = parse_names(args.names)
+    args.names_list, n_holders = parse_names(args.names)
 
     per_page = args.cols * args.rows
     if args.count is None:
@@ -942,7 +1033,10 @@ def main():
     if not args.quiet:
         sheets = math.ceil(args.count / per_page)
         pad = max(args.pad, len(str(abs(args.start + args.count - 1))))
-        named = f", {len(args.names_list)} named" if args.names_list else ""
+        named = ""
+        if args.names_list:
+            named = (f", {n_holders} holder{'s' if n_holders != 1 else ''}, "
+                     f"{len(args.names_list)} named tickets")
         print(f"{args.count} tickets ({args.start:0{pad}d}–{args.start + args.count - 1:0{pad}d})"
               f"{named} on {sheets} sheet{'s' if sheets != 1 else ''} of {args.cols}x{args.rows}"
               f" ({args.page} {args.page_size[0]:g}x{args.page_size[1]:g}mm,"
