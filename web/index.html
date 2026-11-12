@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1258a7">
+<meta name="description" content="Generate print-ready raffle ticket PDFs in your browser — standard and VIP pre-order batches for the Class 9 Section D raffle draw. No login needed.">
+<title>Raffle Tickets — Class 9 · Section D</title>
+<style>
+  :root {
+    --blue: #1258a7; --blue-dark: #0d3f77; --ink: #0e2f52;
+    --gold: #b8860b; --gold-bright: #f2c94c; --gold-dark: #c9971c;
+    --muted: #46607a; --bg: #f4f7fb; --card: #ffffff;
+    --ok: #1a7f37; --warn: #b35900; --line: #dbe7f4;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.5 system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  main { max-width: 660px; margin: 0 auto; padding: 0 14px 40px; }
+
+  header.hero {
+    background: linear-gradient(160deg, var(--blue) 0%, var(--blue-dark) 100%);
+    color: #fff; padding: 22px 16px 20px; text-align: center;
+  }
+  header.hero img { width: 52px; height: 52px; object-fit: contain; }
+  header.hero h1 { font-size: 22px; margin: 8px 0 2px; letter-spacing: 0.02em; }
+  header.hero p { margin: 0; font-size: 13.5px; opacity: 0.85; }
+  header.hero .pill {
+    display: inline-block; margin-top: 10px; font-size: 12px; font-weight: 600;
+    background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.25);
+    padding: 4px 12px; border-radius: 99px; letter-spacing: 0.03em;
+  }
+
+  .card {
+    background: var(--card); border-radius: 14px; padding: 18px 16px;
+    margin: 16px 0; box-shadow: 0 2px 14px rgba(18,52,84,0.10);
+    border: 1px solid #e6eef7;
+  }
+  .card h2 { font-size: 17px; margin: 10px 0 2px; }
+  .card .sub { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
+  .chip {
+    display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 0.08em;
+    color: #fff; background: var(--blue); border-radius: 6px; padding: 3px 9px;
+    vertical-align: 2px;
+  }
+  .chip.gold { background: var(--gold); }
+
+  /* --- mini ticket previews (pure CSS, live numbers) --- */
+  .mini-wrap { display: flex; justify-content: center; margin: 4px 0 14px; }
+  .mini {
+    display: flex; width: 250px; border: 1.5px dashed #9fb3c9; background: #fff;
+    box-shadow: 0 3px 10px rgba(14,47,82,0.14);
+  }
+  .mini .body { flex: 1; padding: 7px 8px 6px; min-width: 0; }
+  .mini .body img { height: 15px; float: left; margin-right: 4px; }
+  .mini .school { font-size: 5.5px; font-weight: 700; letter-spacing: 0.04em; line-height: 1.35; }
+  .mini .t { font-size: 12px; font-weight: 900; letter-spacing: 0.03em; margin-top: 3px; }
+  .mini .cl { font-size: 7px; font-weight: 700; margin-top: 1px; }
+  .mini .nm { font-size: 10px; font-weight: 800; margin-top: 2px; min-height: 12px; }
+  .mini .foot { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 3px;
+                font-size: 6.5px; color: var(--muted); font-weight: 600; }
+  .mini .foot b { color: var(--blue); font-weight: 800; }
+  .mini .stub {
+    flex: 0 0 60px; color: #fff; text-align: center; display: flex;
+    flex-direction: column; justify-content: space-between; padding: 6px 2px 5px;
+    background: linear-gradient(180deg, var(--blue) 0%, var(--blue-dark) 100%);
+  }
+  .mini .stub .yr { font-size: 6.5px; font-weight: 800; letter-spacing: 0.1em; }
+  .mini .stub .pt { font-size: 5.5px; font-weight: 800; letter-spacing: 0.08em; line-height: 1.6; }
+  .mini .stub .no { font-size: 5px; font-weight: 700; letter-spacing: 0.18em; opacity: 0.9; }
+  .mini .stub .num { font-size: 15px; font-weight: 900; letter-spacing: 0.02em; }
+  .mini.gold { width: 205px; }
+  .mini.gold .t { color: #9a7200; }
+  .mini.gold .nm { color: var(--gold); }
+  .mini.gold .foot b { color: var(--gold); }
+  .mini.gold .stub {
+    background: linear-gradient(180deg, var(--gold-bright) 0%, var(--gold-dark) 100%);
+    color: #2b2000; flex-basis: 50px;
+  }
+  .mini.gold .stub .num { font-size: 13px; }
+
+  /* --- forms --- */
+  .fields { display: flex; gap: 10px; flex-wrap: wrap; }
+  .fields label { flex: 1; min-width: 130px; font-size: 12.5px; font-weight: 600;
+                  color: var(--muted); }
+  input[type="number"], input[type="text"] {
+    display: block; width: 100%; margin-top: 4px; padding: 10px 12px;
+    font-size: 17px; color: var(--ink); background: #fbfdff;
+    border: 1.5px solid #c9d9ea; border-radius: 9px; outline: none;
+  }
+  input:focus { border-color: var(--blue); background: #fff; }
+
+  .holders { margin-top: 4px; }
+  .hrow { display: flex; gap: 8px; margin: 8px 0; align-items: end; }
+  .hrow .hname { flex: 1; }
+  .hrow .hcount { width: 86px; }
+  .hrow button.rm {
+    width: 42px; height: 42px; border-radius: 9px; border: 1.5px solid #ecc;
+    background: #fff5f5; color: #b3261e; font-size: 20px; line-height: 1;
+    cursor: pointer; margin-bottom: 1px;
+  }
+  button.add {
+    width: 100%; padding: 9px; margin-top: 2px; border: 1.5px dashed #c9b26a;
+    border-radius: 9px; background: #fffdf4; color: #6b5a26; font-size: 14px;
+    font-weight: 600; cursor: pointer;
+  }
+
+  .summary { font-size: 13.5px; color: var(--muted); margin: 12px 0 0; }
+  .summary b { color: var(--ink); }
+  .warn { display: none; font-size: 13px; color: var(--warn); background: #fff7ec;
+          border: 1px solid #f0d9b6; border-radius: 8px; padding: 8px 10px; margin: 10px 0 0; }
+  .warn.show { display: block; }
+
+  .btn {
+    display: block; width: 100%; margin-top: 14px; padding: 15px;
+    font-size: 16.5px; font-weight: 800; color: #fff; background: var(--blue);
+    border: none; border-radius: 11px; cursor: pointer; letter-spacing: 0.01em;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn[disabled] { opacity: 0.65; cursor: default; }
+  .btn.gold { background: linear-gradient(160deg, var(--gold-bright) 0%, var(--gold) 78%); color: #241a00; }
+  .status { font-size: 12.5px; color: var(--muted); margin: 8px 0 0; min-height: 18px; }
+  .status.ok { color: var(--ok); font-weight: 600; }
+  .status.err { color: #b3261e; font-weight: 600; }
+
+  .links a { display: inline-block; margin: 4px 10px 4px 0; color: var(--blue);
+             font-weight: 700; text-decoration: none; border-bottom: 2px solid #bcd4ee; }
+  .links a.gold { color: var(--gold); border-color: #ecd9a0; }
+
+  .tips { font-size: 13.5px; color: var(--muted); }
+  .tips h2 { font-size: 15px; color: var(--ink); margin: 0 0 6px; }
+  .tips ul { margin: 0; padding-left: 20px; }
+  .tips li { margin: 4px 0; }
+  .tips b { color: var(--ink); }
+
+  footer { text-align: center; font-size: 12.5px; color: var(--muted); margin-top: 26px; }
+  footer a { color: var(--blue); }
+  .noscript { background: #fdecea; color: #b3261e; padding: 14px; border-radius: 10px;
+              font-weight: 600; margin: 14px; }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <img id="hdr-logo" alt="School crest">
+  <h1>Raffle Draw — Class 9 · Section D</h1>
+  <p>Civil Aviation School &amp; College, Kurmitola</p>
+  <span class="pill">Generate ticket PDFs right here — no login, works offline once loaded</span>
+</header>
+
+<noscript><div class="noscript">This generator needs JavaScript. The ready-made PDFs still work: scroll down to “Official print files”.</div></noscript>
+
+<main>
+  <!-- ================= STANDARD ================= -->
+  <section class="card" id="normal-card">
+    <span class="chip">STANDARD</span>
+    <h2>Tk 10 tickets</h2>
+    <p class="sub">Festive blue, two-part tickets (body + jar stub), 40 per A4 sheet.</p>
+
+    <div class="mini-wrap"><div class="mini" aria-hidden="true">
+      <div class="body">
+        <img id="mini-logo-1" alt="">
+        <div class="school">CIVIL AVIATION SCHOOL<br>&amp; COLLEGE, KURMITOLA</div>
+        <div class="t" style="color:#1258a7">RAFFLE DRAW</div>
+        <div class="cl">Class 9 · Section D</div>
+        <div class="foot">Price: <b>Tk 10</b> · No. <b id="mini-num-1">001</b></div>
+      </div>
+      <div class="stub">
+        <div><div class="yr">2026</div><div class="pt">CLASS<br>PARTY</div></div>
+        <div><div class="no">NO.</div><div class="num" id="mini-stub-1">001</div></div>
+      </div>
+    </div></div>
+
+    <div class="fields">
+      <label>First number
+        <input type="number" id="n-start" value="1" min="1" max="99999" inputmode="numeric">
+      </label>
+      <label>How many tickets
+        <input type="number" id="n-count" value="480" min="1" max="2000" inputmode="numeric">
+      </label>
+    </div>
+    <p class="summary" id="n-summary"></p>
+    <p class="warn" id="n-warn"></p>
+    <button class="btn" id="btn-normal" type="button">Download standard PDF</button>
+    <p class="status" id="n-status"></p>
+  </section>
+
+  <!-- ================= VIP ================= -->
+  <section class="card" id="vip-card">
+    <span class="chip gold">VIP</span>
+    <h2>Pre-order tickets</h2>
+    <p class="sub">Gold, holder’s name printed on every ticket, 15 per A4 sheet (3 × 5). The list below comes from <code>vip_list.json</code>.</p>
+
+    <div class="mini-wrap"><div class="mini gold" aria-hidden="true">
+      <div class="body">
+        <img id="mini-logo-2" alt="">
+        <div class="school">CIVIL AVIATION SCHOOL<br>&amp; COLLEGE, KURMITOLA</div>
+        <div class="t">VIP TICKET</div>
+        <div class="cl">Class 9 · Section D</div>
+        <div class="nm" id="mini-name-2">Topu</div>
+        <div class="foot">Price: <b>Tk 10</b> · No. <b id="mini-num-2">481</b></div>
+      </div>
+      <div class="stub">
+        <div><div class="yr">2026</div><div class="pt">CLASS<br>PARTY</div></div>
+        <div><div class="no">NO.</div><div class="num" id="mini-stub-2">481</div></div>
+      </div>
+    </div></div>
+
+    <div class="fields">
+      <label>First number
+        <input type="number" id="v-start" value="481" min="1" max="99999" inputmode="numeric">
+      </label>
+    </div>
+
+    <div class="holders" id="vip-rows"></div>
+    <button class="add" id="v-add" type="button">+ Add ticket holder</button>
+
+    <p class="summary" id="v-summary"></p>
+    <p class="warn" id="v-warn"></p>
+    <button class="btn gold" id="btn-vip" type="button">Download VIP PDF</button>
+    <p class="status" id="v-status"></p>
+  </section>
+
+  <!-- ================= OFFICIAL FILES ================= -->
+  <section class="card">
+    <span class="chip" style="background:#46607a">READY-MADE</span>
+    <h2>Official print files</h2>
+    <p class="sub">Built automatically from the latest commit — byte-for-byte the CI output. Use these if you just need the standard batches.</p>
+    <p class="links">
+      <a href="raffle_tickets.pdf">Standard 480 — PDF</a>
+      <a class="gold" href="vip_tickets.pdf">VIP 15 — PDF</a>
+      <a href="sheet.html">Standard HTML</a>
+      <a class="gold" href="vip.html">VIP HTML</a>
+    </p>
+  </section>
+
+  <!-- ================= TIPS ================= -->
+  <section class="card tips">
+    <h2>Printing tips</h2>
+    <ul>
+      <li>Print at <b>100% scale / Actual size</b> — never “Fit to page”, it shrinks the grid.</li>
+      <li>A4 paper, <b>single-sided</b>; cut along the dashed lines.</li>
+      <li>Keep sheets whole: cut a ticket off only when it sells, tear body from stub, <b>stub goes in the jar</b> immediately.</li>
+      <li>Numbering plan: standard <b>001–480</b>, VIP pre-orders <b>481–495</b>. Extra standard tickets should start at <b>496</b> so no two stubs share a number.</li>
+    </ul>
+  </section>
+
+  <footer>
+    Open source: <a href="https://github.com/RohanDaCoder/raffle-draw">RohanDaCoder/raffle-draw</a>
+  </footer>
+</main>
+
+<script src="vendor/jspdf.umd.min.js"></script>
+<script src="logo.js"></script>
+<script src="generator.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var VIP_DEFAULT = [
+    { name: "Topu", tickets: 5 },
+    { name: "Faiyaz", tickets: 5 },
+    { name: "Nakkhatra", tickets: 5 }
+  ];
+  var VIP_RANGE = [481, 495];        // canonical VIP pre-order numbers
+  var STD_RANGE = [1, 480];          // canonical standard run
+
+  // header + preview logos straight from the embedded base64
+  try {
+    $("hdr-logo").src = CASCK_LOGO.data;
+    $("mini-logo-1").src = CASCK_LOGO.data;
+    $("mini-logo-2").src = CASCK_LOGO.data;
+    var fav = document.createElement("link");
+    fav.rel = "icon"; fav.href = CASCK_LOGO.data;
+    document.head.appendChild(fav);
+  } catch (e) {}
+
+  function pad(n, w) {
+    var s = String(Math.abs(n));
+    while (s.length < w) s = "0" + s;
+    return s;
+  }
+  function num(v, dflt) {
+    var n = parseInt(v, 10);
+    return isNaN(n) ? dflt : n;
+  }
+
+  // ---------------- VIP holder rows ----------------
+  var holders = [];
+  function renderHolders() {
+    var box = $("vip-rows");
+    box.innerHTML = "";
+    holders.forEach(function (h, i) {
+      var row = document.createElement("div");
+      row.className = "hrow";
+      var nameLab = document.createElement("label");
+      nameLab.className = "hname";
+      nameLab.appendChild(document.createTextNode(i === 0 ? "Holder name" : "\u00A0"));
+      var nameIn = document.createElement("input");
+      nameIn.type = "text"; nameIn.value = h.name; nameIn.maxLength = 24;
+      nameIn.setAttribute("aria-label", "Holder name " + (i + 1));
+      nameIn.addEventListener("input", function () { h.name = nameIn.value; refresh(); });
+      nameLab.appendChild(nameIn);
+      var cntLab = document.createElement("label");
+      cntLab.className = "hcount";
+      cntLab.appendChild(document.createTextNode(i === 0 ? "Tickets" : "\u00A0"));
+      var cntIn = document.createElement("input");
+      cntIn.type = "number"; cntIn.min = "1"; cntIn.max = "50"; cntIn.value = h.tickets;
+      cntIn.setAttribute("aria-label", "Tickets for holder " + (i + 1));
+      cntIn.addEventListener("input", function () { h.tickets = num(cntIn.value, 1); refresh(); });
+      cntLab.appendChild(cntIn);
+      var rm = document.createElement("button");
+      rm.className = "rm"; rm.type = "button"; rm.title = "Remove holder";
+      rm.textContent = "\u00D7";
+      rm.addEventListener("click", function () {
+        holders.splice(i, 1); renderHolders(); refresh();
+      });
+      row.appendChild(nameLab); row.appendChild(cntLab); row.appendChild(rm);
+      box.appendChild(row);
+    });
+  }
+  $("v-add").addEventListener("click", function () {
+    holders.push({ name: "", tickets: 1 });
+    renderHolders(); refresh();
+    var inputs = $("vip-rows").querySelectorAll('input[type="text"]');
+    if (inputs.length) inputs[inputs.length - 1].focus();
+  });
+
+  // ---------------- summaries ----------------
+  function rangesOverlap(a1, a2, b1, b2) { return a1 <= b2 && b1 <= a2; }
+
+  function refresh() {
+    // normal
+    var ns = num($("n-start").value, 1), nc = num($("n-count").value, 480);
+    if (ns < 1) ns = 1; if (nc < 1) nc = 1;
+    var last = ns + nc - 1;
+    var w = Math.max(3, String(last).length);
+    var sheets = Math.ceil(nc / 40);
+    $("n-summary").innerHTML = "<b>" + nc + " tickets</b> · No. <b>" + pad(ns, w) + "–" +
+      pad(last, w) + "</b> · " + sheets + " A4 sheet" + (sheets > 1 ? "s" : "") +
+      (nc % 40 === 0 ? " (all full)" : " (last one partial)");
+    var warn = $("n-warn");
+    if (rangesOverlap(ns, last, VIP_RANGE[0], VIP_RANGE[1])) {
+      warn.textContent = "Heads up: " + pad(ns, w) + "–" + pad(last, w) +
+        " overlaps the VIP pre-order numbers 481–495. Two stubs in the jar would share a number — start extra standard tickets at 496.";
+      warn.className = "warn show";
+    } else { warn.className = "warn"; }
+    $("mini-num-1").textContent = pad(ns, w);
+    $("mini-stub-1").textContent = pad(ns, w);
+
+    // vip
+    var vs = num($("v-start").value, 481);
+    if (vs < 1) vs = 1;
+    var total = 0, parts = [], cur = vs;
+    holders.forEach(function (h) {
+      var t = Math.max(1, Math.floor(h.tickets || 1));
+      total += t;
+      if (h.name && h.name.trim()) {
+        parts.push((h.name.trim()) + " " + cur + "–" + (cur + t - 1));
+      }
+      cur += t;
+    });
+    var vw = Math.max(3, String(cur - 1).length);
+    var vsheets = Math.ceil(total / 15);
+    $("v-summary").innerHTML = total
+      ? "<b>" + total + " tickets</b> · No. <b>" + pad(vs, vw) + "–" + pad(cur - 1, vw) +
+        "</b> · " + vsheets + " A4 sheet" + (vsheets > 1 ? "s" : "") +
+        (total % 15 === 0 ? " (full 3×5 grid)" : " (partial last sheet)") +
+        (parts.length ? "<br>" + parts.join(" · ") : "")
+      : "Add at least one ticket holder.";
+    var vwarn = $("v-warn");
+    if (total && rangesOverlap(vs, cur - 1, STD_RANGE[0], STD_RANGE[1])) {
+      vwarn.textContent = "Heads up: this range overlaps the standard run 001–480 — every stub in the jar must have a unique number. VIP usually starts at 481.";
+      vwarn.className = "warn show";
+    } else { vwarn.className = "warn"; }
+    var firstNamed = null;
+    for (var i = 0; i < holders.length; i++) {
+      if (holders[i].name && holders[i].name.trim()) { firstNamed = holders[i].name.trim(); break; }
+    }
+    $("mini-name-2").textContent = firstNamed || "—";
+    $("mini-num-2").textContent = pad(vs, vw);
+    $("mini-stub-2").textContent = pad(vs, vw);
+  }
+  ["n-start", "n-count", "v-start"].forEach(function (id) {
+    $(id).addEventListener("input", refresh);
+  });
+
+  // ---------------- generation ----------------
+  function setStatus(id, msg, cls) {
+    var el = $(id);
+    el.textContent = msg || "";
+    el.className = "status" + (cls ? " " + cls : "");
+  }
+
+  function download(btn, statusId, buildOpts, filename) {
+    return function () {
+      if (!window.RaffleGen) {
+        setStatus(statusId, "Generator failed to load — use the official files below.", "err");
+        return;
+      }
+      var old = btn.textContent;
+      btn.disabled = true;
+      setStatus(statusId, "Preparing…");
+      var t0 = Date.now();
+      var opts;
+      try { opts = buildOpts(); } catch (e) {
+        btn.disabled = false; btn.textContent = old;
+        setStatus(statusId, e.message, "err");
+        return;
+      }
+      RaffleGen.generateBatch(opts, function (p, t) {
+        btn.textContent = "Generating — sheet " + p + " of " + t + "…";
+        setStatus(statusId, "");
+      }).then(function (doc) {
+        btn.textContent = old;
+        try {
+          doc.save(filename(opts));
+          setStatus(statusId, "Saved — check your Downloads (" +
+            ((Date.now() - t0) / 1000).toFixed(1) + " s). Open it and print at 100% scale.", "ok");
+        } catch (e) {
+          window.open(doc.output("bloburl"), "_blank");
+          setStatus(statusId, "Opened the PDF in a new tab — save it from there.", "ok");
+        }
+        setTimeout(function () { btn.disabled = false; }, 800);
+      }).catch(function (e) {
+        btn.textContent = old; btn.disabled = false;
+        setStatus(statusId, "Could not generate: " + (e && e.message ? e.message : e) +
+          " — the official files below always work.", "err");
+      });
+    };
+  }
+
+  $("btn-normal").addEventListener("click", download(
+    $("btn-normal"), "n-status",
+    function () {
+      var start = num($("n-start").value, 1), count = num($("n-count").value, 480);
+      if (start < 1) throw new Error("First number must be 1 or more.");
+      if (count < 1) throw new Error("Need at least one ticket.");
+      if (count > 2000) throw new Error("Max 2000 tickets per file.");
+      return Object.assign({}, RaffleGen.PRESETS.normal, {
+        logo: CASCK_LOGO, start: start, count: count
+      });
+    },
+    function (opts) {
+      var last = opts.start + opts.count - 1;
+      var w = Math.max(3, String(last).length);
+      return "raffle_tickets_" + pad(opts.start, w) + "-" + pad(last, w) + ".pdf";
+    }
+  ));
+
+  $("btn-vip").addEventListener("click", download(
+    $("btn-vip"), "v-status",
+    function () {
+      var start = num($("v-start").value, 481);
+      if (start < 1) throw new Error("First number must be 1 or more.");
+      var clean = holders.filter(function (h) {
+        return h.name && h.name.trim() && Math.max(1, Math.floor(h.tickets || 1)) > 0;
+      });
+      if (!clean.length) throw new Error("Add at least one holder with a name.");
+      return Object.assign({}, RaffleGen.PRESETS.vip, {
+        logo: CASCK_LOGO, start: start,
+        names: RaffleGen.expandHolders(clean.map(function (h) {
+          return { name: h.name.trim(), tickets: Math.max(1, Math.floor(h.tickets || 1)) };
+        }))
+      });
+    },
+    function (opts) {
+      var last = opts.start + opts.names.length - 1;
+      var w = Math.max(3, String(last).length);
+      return "vip_tickets_" + pad(opts.start, w) + "-" + pad(last, w) + ".pdf";
+    }
+  ));
+
+  // ---------------- boot: load the pre-order list ----------------
+  function parseVipJson(data) {
+    if (Array.isArray(data)) {
+      return data.map(function (e) {
+        return typeof e === "string"
+          ? { name: e, tickets: 1 }
+          : { name: e && e.name, tickets: (e && (e.tickets != null ? e.tickets : e.count)) || 1 };
+      }).filter(function (r) { return r.name; });
+    }
+    if (data && Array.isArray(data.preorders)) return parseVipJson(data.preorders);
+    if (data && typeof data === "object") {
+      var out = [];
+      Object.keys(data).forEach(function (k) {
+        if (["note", "comment", "$comment", "_comment"].indexOf(k) < 0) {
+          out.push({ name: k, tickets: data[k] });
+        }
+      });
+      return out;
+    }
+    return null;
+  }
+  function boot(list) {
+    holders = list && list.length ? list : VIP_DEFAULT.slice();
+    renderHolders();
+    refresh();
+  }
+  if (window.fetch) {
+    fetch("vip_list.json").then(function (r) {
+      if (!r.ok) throw new Error("http " + r.status);
+      return r.json();
+    }).then(function (data) {
+      var list = parseVipJson(data);
+      boot(list && list.length ? list : VIP_DEFAULT.slice());
+    }).catch(function () { boot(null); });
+  } else {
+    boot(null);
+  }
+})();
+</script>
+</body>
+</html>

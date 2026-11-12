@@ -2,9 +2,10 @@ name: build-release
 
 # Every push to main: build the sheets, publish a GitHub Release with the
 # PDF/HTML/preview attached (the preview image renders inside the release
-# notes), and — when GitHub Pages is available for the repo — deploy a
-# live-preview site. Pages needs a public repo (or a paid plan for private
-# repos) with Pages enabled; the workflow stays green without it.
+# notes), and — when GitHub Pages is available for the repo — deploy the
+# ticket-generator site (in-browser PDF generation, no login, plus the
+# ready-made print files). Pages needs a public repo (or a paid plan for
+# private repos) with Pages enabled; the workflow stays green without it.
 
 on:
   push:
@@ -64,9 +65,11 @@ jobs:
           | \`vip_tickets.html\` | Self-contained printable HTML (VIP) |
           | \`vip_preview.png\` | VIP sheet, page 1 preview |
 
-          Live preview site: **https://${REPO%%/*}.github.io/${REPO#*/}/**
-          (requires GitHub Pages — public repo or paid plan; the preview above
-          works regardless).
+          Live site: **https://${REPO%%/*}.github.io/${REPO#*/}/** — a full
+          in-browser ticket generator (standard + VIP, custom counts and
+          holders, PDFs made right on the phone) plus the ready-made files
+          above. Requires GitHub Pages — public repo or paid plan; the preview
+          image above works regardless.
           EOF
           )
           gh release create "$TAG" \
@@ -81,47 +84,14 @@ jobs:
           mkdir -p site
           cp dist/raffle_tickets.html site/sheet.html
           cp dist/raffle_tickets.pdf   site/raffle_tickets.pdf
-          cp dist/preview.png         site/preview.png
-          cp dist/vip_tickets.html    site/vip.html
-          cp dist/vip_tickets.pdf     site/vip_tickets.pdf
-          cp dist/vip_preview.png    site/vip_preview.png
-          cat > site/index.html <<'EOF'
-          <!doctype html>
-          <html lang="en">
-          <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1">
-          <title>Raffle Draw — Class 9 · Section D</title>
-          <style>
-            body { font-family: system-ui, sans-serif; margin: 0; padding: 32px 16px;
-                   background: #f4f7fb; color: #12283f; }
-            main { max-width: 860px; margin: auto; }
-            h1 { font-size: 22px; margin: 0 0 4px; }
-            h2 { font-size: 17px; margin: 28px 0 4px; }
-            p.sub { color: #46607a; margin-top: 0; }
-            a.btn { display: inline-block; background: #1258a7; color: #fff; padding: 10px 18px;
-                    border-radius: 6px; text-decoration: none; margin: 12px 8px 16px 0; }
-            a.btn.gold { background: #b8860b; }
-            img { width: 100%; border: 1px solid #cbd7e6; border-radius: 8px;
-                  box-shadow: 0 2px 14px rgba(18,52,84,.12); display: block; }
-          </style>
-          </head>
-          <body>
-          <main>
-            <h1>Raffle Draw — Class 9 · Section D</h1>
-            <p class="sub">480 standard tickets (Tk 10) + VIP pre-orders (named, gold) · auto-built from the latest commit on main.</p>
-            <h2>Standard — Tk 10</h2>
-            <a class="btn" href="raffle_tickets.pdf">Open PDF</a>
-            <a class="btn" href="sheet.html">Printable HTML</a>
-            <img src="preview.png" alt="Standard ticket sheet, page 1">
-            <h2>VIP pre-orders — named, gold</h2>
-            <a class="btn gold" href="vip_tickets.pdf">Open VIP PDF</a>
-            <a class="btn gold" href="vip.html">Printable HTML</a>
-            <img src="vip_preview.png" alt="VIP ticket sheet, page 1">
-          </main>
-          </body>
-          </html>
-          EOF
+          cp dist/preview.png          site/preview.png
+          cp dist/vip_tickets.html     site/vip.html
+          cp dist/vip_tickets.pdf      site/vip_tickets.pdf
+          cp dist/vip_preview.png      site/vip_preview.png
+          # the in-browser generator (index.html + generator.js + vendored jsPDF)
+          cp -r web/.                  site/
+          # pre-order list feeding the VIP editor
+          cp examples/vip_list.json    site/vip_list.json
 
       - name: Configure Pages
         id: pages

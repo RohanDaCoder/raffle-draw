@@ -42,6 +42,36 @@ bash examples/make_class9d.sh     # -> dist/raffle_tickets.{html,pdf}, dist/prev
 480 two-part tickets · Class 9 · Section D · Tk 10 · Civil Aviation School & College, Kurmitola ·
 12 full A4 sheets, festive aviation-blue theme matched to the school logo.
 
+## Generate tickets from the website
+
+The GitHub Pages site is a **full ticket generator that runs in the browser** —
+built for exactly the case where you are on someone else's phone with no
+GitHub login: open the site, set the numbers, tap download.
+
+**<https://rohandacoder.github.io/raffle-draw/>**
+
+* **Standard** — pick the first number and the count (defaults: 001–480,
+  12 sheets). If the range would collide with the VIP numbers 481–495 the
+  page warns you before you print duplicates into the jar.
+* **VIP** — an editor prefilled from `examples/vip_list.json`: add or remove
+  holders, change counts, and each holder's number range is shown live
+  (default: Topu 481–485 · Faiyaz 486–490 · Nakkhatra 491–495).
+* **Ready-made files** — the CI-built Playwright PDFs are linked on the same
+  page, so the canonical batches are always one tap away.
+
+Everything happens client-side: `web/generator.js` is the same millimetre
+layout engine as `raffle_gen.py`, ported to jsPDF (vendored in `web/vendor/`,
+MIT) — no server, no account, and generation keeps working on a flaky
+connection once the page has loaded. Phone-generated sheets match the
+CI-built releases: same grid, themes, tear lines and numbering.
+
+Serve it locally exactly like CI does:
+
+```bash
+mkdir /tmp/raffle-site && cp -r web/* examples/vip_list.json /tmp/raffle-site/ &&
+  cd /tmp/raffle-site && python3 -m http.server
+```
+
 ## Running the draw
 
 With `--split-stub` every ticket is two parts sharing one number:
@@ -155,10 +185,11 @@ Any single colour can be overridden, e.g. `--theme festive --accent "#b8860b"`.
    `raffle_tickets.pdf`/`.html`/`preview.png` and the VIP
    `vip_tickets.pdf`/`.html`/`vip_preview.png` attached —
    the preview image renders right inside the release notes,
-4. deploys a **GitHub Pages** live preview at
-   `https://<user>.github.io/raffle-draw/` — page-1 image, the printable HTML,
-   and the PDF, all viewable directly in the browser. Pages requires the repo
-   to be **public** (or a paid plan for private repos) with Pages enabled in
+4. deploys the **GitHub Pages site** — the in-browser ticket generator from
+   `web/` (standard + VIP, custom counts and holders, PDFs made on the
+   phone) plus the CI-built print files — at
+   `https://<user>.github.io/raffle-draw/`. Pages requires the repo to be
+   **public** (or a paid plan for private repos) with Pages enabled in
    Settings → Pages → Source: GitHub Actions; without it the workflow still
    succeeds and the release page remains the direct preview.
 
