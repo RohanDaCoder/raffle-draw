@@ -6,10 +6,9 @@
 # continues after the standard run (481+), so every stub in the mixing jar
 # stays unique.
 #
-# 15 pre-orders = one perfectly full 3x5 A4 sheet (no wasted paper). If the
-# list grows past 15, raise --rows to the next multiple of 3 to keep full
-# sheets (e.g. 18 tickets -> --rows 6), or keep 5 and accept a short last
-# sheet.
+# Same format as the standard batch (4x10 grid, identical sizes and
+# positions) — only the gold theme, the VIP title, the holder names and
+# the 481+ numbering differ. 15 pre-orders = one short A4 sheet.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -24,8 +23,6 @@ python3 raffle_gen.py \
   --logo-scale 1.3 \
   --split-stub \
   --theme gold \
-  --cols 3 --rows 5 \
-  --font-scale 1.2 \
   --names examples/vip_list.json \
   --name-label "" \
   --html dist/vip_tickets.html \

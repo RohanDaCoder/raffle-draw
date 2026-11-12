@@ -126,9 +126,10 @@ Nakkhatra 491–495 — and the ticket total follows the file automatically, so
 adding a pre-order is just adding a line and pushing. A list form works too:
 `[{"name": "Topu", "tickets": 5}]` (bare strings mean one ticket), and
 `{"name": null, "tickets": 2}` prints blank fill-in tickets. The VIP build
-uses a 3×5 grid, so the current 15 pre-orders fill **exactly one A4 sheet
-with nothing wasted**; if the list grows past 15, raise `--rows` to the next
-multiple of 3 to keep full sheets. CI ships both sets in every release and on
+uses the **same 4×10 A4 format as the standard batch** — identical ticket
+size, grid and element positions; only the gold theme, VIP title, holder
+names and 481+ numbering differ. The current 15 pre-orders fill one short
+A4 sheet. CI ships both sets in every release and on
 the Pages site. At the event, hand pre-orderers their named VIP ticket first;
 their stub goes into the jar like any other.
 

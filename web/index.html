@@ -197,7 +197,7 @@
   <section class="card" id="vip-card">
     <span class="chip gold">VIP</span>
     <h2>Pre-order tickets</h2>
-    <p class="sub">Gold, holder’s name printed on every ticket, 15 per A4 sheet (3 × 5). The list below comes from <code>vip_list.json</code>.</p>
+    <p class="sub">Gold, holder’s name printed on every ticket, same ticket size and layout as the standard batch (4 × 10 grid). The list below comes from <code>vip_list.json</code>.</p>
 
     <div class="mini-wrap"><div class="mini gold" aria-hidden="true">
       <div class="body">
@@ -369,11 +369,12 @@
       cur += t;
     });
     var vw = Math.max(3, String(cur - 1).length);
-    var vsheets = Math.ceil(total / 15);
+    var vpp = RaffleGen.PRESETS.vip.cols * RaffleGen.PRESETS.vip.rows; // 4x10 = standard format
+    var vsheets = Math.ceil(total / vpp);
     $("v-summary").innerHTML = total
       ? "<b>" + total + " tickets</b> · No. <b>" + pad(vs, vw) + "–" + pad(cur - 1, vw) +
         "</b> · " + vsheets + " A4 sheet" + (vsheets > 1 ? "s" : "") +
-        (total % 15 === 0 ? " (full 3×5 grid)" : " (partial last sheet)") +
+        " (standard 4×10 grid)" +
         (parts.length ? "<br>" + parts.join(" · ") : "")
       : "Add at least one ticket holder.";
     var vwarn = $("v-warn");
