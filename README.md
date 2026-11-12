@@ -45,7 +45,7 @@ either way **print at 100% scale (Actual Size)** and cut along the dashed lines.
 bash examples/make_class9d.sh     # -> dist/raffle_tickets.{html,pdf}, dist/preview.png
 ```
 
-480 two-part tickets · Class 9 · Section D · Tk 10 · Civil Aviation School & College, Kurmitola ·
+480 two-part tickets · Class 9 · Section D · 10tk · Civil Aviation School & College, Kurmitola ·
 12 full A4 sheets, festive aviation-blue theme matched to the school logo.
 
 ## Generate tickets from the website
@@ -106,9 +106,9 @@ same draw:
 
 | Tier | Build | Numbers | Look |
 |---|---|---|---|
-| Standard | `examples/make_class9d.sh` | 001–480, Tk 10 | festive blue |
-| VIP (pre-ordered, named) | `examples/make_vip.sh` | 481–495 (3 holders × 5), Tk 10 | gold, holder's name printed |
-| Teachers (optional) | see below | after VIP, Tk 50 | e.g. `classic` |
+| Standard | `examples/make_class9d.sh` | 001–480, 10tk | festive blue |
+| VIP (pre-ordered, named) | `examples/make_vip.sh` | 481–495 (3 holders × 5), 10tk | gold, holder's name printed |
+| Teachers (optional) | see below | after VIP, 50tk | e.g. `classic` |
 
 **VIP**: the pre-order list is `examples/vip_list.json` — a JSON map of holder
 to ticket count:
@@ -138,7 +138,7 @@ their stub goes into the jar like any other.
 python raffle_gen.py --theme classic --title "TEACHERS TICKET" \
   --school "CIVIL AVIATION SCHOOL|& COLLEGE, KURMITOLA" \
   --class-line "Staff & Faculty" --party "2026|CLASS PARTY" \
-  --price "Tk 50" --logo examples/casck_logo.png --split-stub \
+  --price "50tk" --logo examples/casck_logo.png --split-stub \
   --start 496 --count 30 --html dist/teachers.html --pdf dist/teachers.pdf
 ```
 
@@ -153,7 +153,7 @@ every long option can also be set in a JSON file passed with `--config`
 
 | Group | Options |
 |---|---|
-| **Content** | `--title` · `--school "LINE1\|LINE2"` · `--class-line` · `--party "2026\|CLASS PARTY"` (stub text, year larger) · `--price "Tk 10"` / `--price none` (footer band; the value is printed as-is, label-free) · `--draw-date "15 Dec 2026"` / `_` = blank line / omitted = hidden · `--draw-date-label` · `--logo FILE` · `--logo-scale X` · `--no-logo` · `--embed-logo/--no-embed-logo` (base64, default on) · `--number-label` · `--names FILE` (VIP holder names: JSON `{"Topu": 5}` map or list of `{"name", "tickets"}`; legacy one-per-line text also works) · `--name-label` |
+| **Content** | `--title` · `--school "LINE1\|LINE2"` · `--class-line` · `--party "2026\|CLASS PARTY"` (stub text, year larger) · `--price "10tk"` / `--price none` (footer band; the value is printed as-is, label-free) · `--draw-date "15 Dec 2026"` / `_` = blank line / omitted = hidden · `--draw-date-label` · `--logo FILE` · `--logo-scale X` · `--no-logo` · `--embed-logo/--no-embed-logo` (base64, default on) · `--number-label` · `--names FILE` (VIP holder names: JSON `{"Topu": 5}` map or list of `{"name", "tickets"}`; legacy one-per-line text also works) · `--name-label` |
 | **Numbering** | `--count N` · `--sheets N` (N full sheets instead of a count) · `--start` · `--pad` (auto-widened if too small) · `--number-prefix/--number-suffix` |
 | **Layout** | `--cols` / `--rows` (grid per sheet) · `--page a3\|a4\|a5\|a6\|letter\|legal\|tabloid` or `210x297` mm · `--margin` · `--stub-width` · `--stub-side right\|left` · `--split-stub` (two-part ticket: tear line + number on both halves) |
 | **Style** | `--theme festive\|classic\|carnival\|bw\|gold` · `--accent/--ink/--muted/--cut-color` · `--cut-style dashed\|solid\|none` · `--cut-weight` · `--font-family` · `--webfonts/--no-webfonts` · `--font-scale` (auto-reduced when tickets are smaller than the reference 4×10 A4 design, or when a name row makes the stack taller than the cell) · `--blank-width` |

@@ -60,9 +60,14 @@
   .mini .t { font-size: 12px; font-weight: 900; letter-spacing: 0.03em; margin-top: 3px; }
   .mini .cl { font-size: 7px; font-weight: 700; margin-top: 1px; }
   .mini .nm { font-size: 10px; font-weight: 800; margin-top: 2px; min-height: 12px; }
-  .mini .foot { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 3px;
-                font-size: 6.5px; color: var(--muted); font-weight: 600; }
-  .mini .foot b { color: var(--blue); font-weight: 800; }
+  .mini .band {
+    margin-top: 6px; display: flex; justify-content: space-between; align-items: baseline;
+    background: var(--blue); color: #fff; border-radius: 3px; padding: 3px 4.5px;
+    font-size: 6.5px; font-weight: 800; letter-spacing: 0.03em;
+  }
+  .mini .band .no { font-size: 8.5px; font-weight: 900; letter-spacing: 0.02em; }
+  .mini .band .no i { font-style: normal; font-size: 5.5px; font-weight: 700;
+                      letter-spacing: 0.12em; opacity: 0.85; margin-right: 2px; }
   .mini .stub {
     flex: 0 0 60px; color: #fff; text-align: center; display: flex;
     flex-direction: column; justify-content: space-between; padding: 6px 2px 5px;
@@ -75,7 +80,7 @@
   .mini.gold { width: 205px; }
   .mini.gold .t { color: #9a7200; }
   .mini.gold .nm { color: var(--gold); }
-  .mini.gold .foot b { color: var(--gold); }
+  .mini.gold .band { background: #c9971c; color: #2b2000; }
   .mini.gold .stub {
     background: linear-gradient(180deg, var(--gold-bright) 0%, var(--gold-dark) 100%);
     color: #2b2000; flex-basis: 50px;
@@ -157,7 +162,7 @@
   <!-- ================= STANDARD ================= -->
   <section class="card" id="normal-card">
     <span class="chip">STANDARD</span>
-    <h2>Tk 10 tickets</h2>
+    <h2>10tk tickets</h2>
     <p class="sub">Festive blue, two-part tickets (body + jar stub), 40 per A4 sheet.</p>
 
     <div class="mini-wrap"><div class="mini" aria-hidden="true">
@@ -166,7 +171,7 @@
         <div class="school">CIVIL AVIATION SCHOOL<br>&amp; COLLEGE, KURMITOLA</div>
         <div class="t" style="color:#1258a7">RAFFLE DRAW</div>
         <div class="cl">Class 9 · Section D</div>
-        <div class="foot">Price: <b>Tk 10</b> · No. <b id="mini-num-1">001</b></div>
+        <div class="band"><span>10tk</span><span class="no"><i>NO.</i><b id="mini-num-1">001</b></span></div>
       </div>
       <div class="stub">
         <div><div class="yr">2026</div><div class="pt">CLASS<br>PARTY</div></div>
@@ -201,7 +206,7 @@
         <div class="t">VIP TICKET</div>
         <div class="cl">Class 9 · Section D</div>
         <div class="nm" id="mini-name-2">Topu</div>
-        <div class="foot">Price: <b>Tk 10</b> · No. <b id="mini-num-2">481</b></div>
+        <div class="band"><span>10tk</span><span class="no"><i>NO.</i><b id="mini-num-2">481</b></span></div>
       </div>
       <div class="stub">
         <div><div class="yr">2026</div><div class="pt">CLASS<br>PARTY</div></div>

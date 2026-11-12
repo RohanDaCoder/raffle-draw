@@ -846,7 +846,7 @@ def build_parser():
                     "(mm-exact HTML + vector PDF via headless Chromium).",
         epilog="""examples:
   %(prog)s --count 480 --pdf tickets.pdf
-  %(prog)s --theme bw --no-logo --price "Tk 10" --pdf tickets.pdf
+  %(prog)s --theme bw --no-logo --price "10tk" --pdf tickets.pdf
   %(prog)s --page letter --cols 5 --rows 8 --count 200 --preview p.png
   %(prog)s --config myraffle.json --pdf tickets.pdf
   %(prog)s --theme gold --title "VIP TICKET" --names vip_list.json \\
@@ -878,7 +878,7 @@ tips:
     g.add_argument("--party", default="", metavar="YEAR|TEXT",
                    help='stub text, e.g. "2026|CLASS PARTY" (year shown larger)')
     g.add_argument("--price", default="", metavar="TEXT",
-                   help='price value shown in the footer band, e.g. "Tk 10";'
+                   help='price value shown in the footer band, e.g. "10tk";'
                         ' empty or "none" hides the band')
     g.add_argument("--draw-date", default=None, dest="draw_date", metavar="TEXT",
                    help='date value; "_" = blank fill-in line; "none"/omitted hides the row')

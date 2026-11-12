@@ -19,7 +19,7 @@ python3 raffle_gen.py \
   --school "CIVIL AVIATION SCHOOL|& COLLEGE, KURMITOLA" \
   --class-line "Class 9 · Section D" \
   --party "2026|CLASS PARTY" \
-  --price "Tk 10" \
+  --price "10tk" \
   --logo examples/casck_logo.png \
   --logo-scale 1.3 \
   --split-stub \

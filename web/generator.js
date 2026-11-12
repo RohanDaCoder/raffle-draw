@@ -47,14 +47,14 @@
       stubWidth: 12, title: "RAFFLE DRAW",
       school: "CIVIL AVIATION SCHOOL|& COLLEGE, KURMITOLA",
       classLine: "Class 9 \u00B7 Section D", party: "2026|CLASS PARTY",
-      price: "Tk 10", numberLabel: "NO.", logoScale: 1.3
+      price: "10tk", numberLabel: "NO.", logoScale: 1.3
     },
     vip: {
       theme: "gold", cols: 3, rows: 5, fontScale: 1.2, splitStub: true,
       stubWidth: 12, title: "VIP TICKET",
       school: "CIVIL AVIATION SCHOOL|& COLLEGE, KURMITOLA",
       classLine: "Class 9 \u00B7 Section D", party: "2026|CLASS PARTY",
-      price: "Tk 10", numberLabel: "NO.",
+      price: "10tk", numberLabel: "NO.",
       nameLabel: "", logoScale: 1.3
     }
   };
