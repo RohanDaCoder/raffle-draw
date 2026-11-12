@@ -6,6 +6,12 @@ A single Python file builds an A4 (or any size) HTML sheet whose ticket grid fil
 entire printable area — cut lines are shared between neighbours and nothing is printed
 outside the grid — then renders a **vector PDF** through headless Chromium.
 
+Each ticket pairs a white body with a coloured stub for the jar. The body ends in a
+rounded **footer band** printed in the theme colour: price on the left, the matching
+ticket number on the right. The stub is torn off and dropped in the jar at sale time,
+so the band is what the buyer actually keeps — the buyer's half keeps its own block of
+colour instead of going bland after the tear.
+
 ```
 ┌──────────────────────────────── A4 ────────────────────────────────┐
 │ ┌────────────┬────────────┬────────────┬────────────┐             │
@@ -80,7 +86,7 @@ With `--split-stub` every ticket is two parts sharing one number:
    produces a stub, so the jar can only ever contain *bought* numbers.
 2. **At sale**: cut the ticket off the sheet, separate body and stub along the
    middle dashed line (scissors, or fold-then-tear), give the buyer the body
-   (it carries `No. XXX`), drop the stub in the jar immediately.
+   (the footer band carries `No. XXX`), drop the stub in the jar immediately.
 3. **Draw**: pull one stub, read the big number, match it against the buyer's
    body half, award the prize. For several prizes, keep drawing without
    putting stubs back — one ticket can win only once.
@@ -147,7 +153,7 @@ every long option can also be set in a JSON file passed with `--config`
 
 | Group | Options |
 |---|---|
-| **Content** | `--title` · `--school "LINE1\|LINE2"` · `--class-line` · `--party "2026\|CLASS PARTY"` (stub text, year larger) · `--price "Tk 10"` / `--price none` · `--price-label` · `--draw-date "15 Dec 2026"` / `_` = blank line / omitted = hidden · `--draw-date-label` · `--logo FILE` · `--logo-scale X` · `--no-logo` · `--embed-logo/--no-embed-logo` (base64, default on) · `--number-label` · `--names FILE` (VIP holder names: JSON `{"Topu": 5}` map or list of `{"name", "tickets"}`; legacy one-per-line text also works) · `--name-label` |
+| **Content** | `--title` · `--school "LINE1\|LINE2"` · `--class-line` · `--party "2026\|CLASS PARTY"` (stub text, year larger) · `--price "Tk 10"` / `--price none` (footer band; the value is printed as-is, label-free) · `--draw-date "15 Dec 2026"` / `_` = blank line / omitted = hidden · `--draw-date-label` · `--logo FILE` · `--logo-scale X` · `--no-logo` · `--embed-logo/--no-embed-logo` (base64, default on) · `--number-label` · `--names FILE` (VIP holder names: JSON `{"Topu": 5}` map or list of `{"name", "tickets"}`; legacy one-per-line text also works) · `--name-label` |
 | **Numbering** | `--count N` · `--sheets N` (N full sheets instead of a count) · `--start` · `--pad` (auto-widened if too small) · `--number-prefix/--number-suffix` |
 | **Layout** | `--cols` / `--rows` (grid per sheet) · `--page a3\|a4\|a5\|a6\|letter\|legal\|tabloid` or `210x297` mm · `--margin` · `--stub-width` · `--stub-side right\|left` · `--split-stub` (two-part ticket: tear line + number on both halves) |
 | **Style** | `--theme festive\|classic\|carnival\|bw\|gold` · `--accent/--ink/--muted/--cut-color` · `--cut-style dashed\|solid\|none` · `--cut-weight` · `--font-family` · `--webfonts/--no-webfonts` · `--font-scale` (auto-reduced when tickets are smaller than the reference 4×10 A4 design, or when a name row makes the stack taller than the cell) · `--blank-width` |

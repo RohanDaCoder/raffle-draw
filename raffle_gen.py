@@ -27,7 +27,7 @@ import sys
 from html import escape as esc
 from string import Template
 
-VERSION = "1.2.0"
+VERSION = "1.3.0"
 
 PAGE_SIZES = {  # width x height in mm, portrait
     "a3": (297.0, 420.0), "a4": (210.0, 297.0), "a5": (148.0, 210.0),
@@ -42,28 +42,32 @@ THEMES = {
         stub_bg="linear-gradient(180deg, #1258a7 0%, #0d3f77 100%)",
         stub_text="#ffffff", stub_border_w=0.0, stub_sep="rgba(255,255,255,0.55)",
         cut="#9fb3c9", rule="#dbe7f4", muted="#46607a",
-        ink="#0e2f52", title="#1258a7", accent="#1258a7"),
+        ink="#0e2f52", title="#1258a7", accent="#1258a7",
+        band_bg="#1258a7", band_text="#ffffff", band_border_w=0.0),
     "classic": dict(
         font="Georgia,'Times New Roman','Noto Serif SC',serif",
         webfont="",
         stub_bg="#1d3557", stub_text="#ffffff",
         stub_border_w=0.0, stub_sep="rgba(255,255,255,0.5)",
         cut="#b9c4d0", rule="#dfe5ec", muted="#5a6b7d",
-        ink="#14263c", title="#1d3557", accent="#1d3557"),
+        ink="#14263c", title="#1d3557", accent="#1d3557",
+        band_bg="#1d3557", band_text="#ffffff", band_border_w=0.0),
     "carnival": dict(
         font="'Baloo 2','Trebuchet MS','Comic Sans MS',cursive",
         webfont="Baloo+2:wght@600;700;800",
         stub_bg="linear-gradient(180deg, #e63946 0%, #b02a37 100%)",
         stub_text="#ffffff", stub_border_w=0.0, stub_sep="rgba(255,255,255,0.55)",
         cut="#f3b8c0", rule="#fde5e8", muted="#8a4a52",
-        ink="#4a1116", title="#c1121f", accent="#c1121f"),
+        ink="#4a1116", title="#c1121f", accent="#c1121f",
+        band_bg="#c1121f", band_text="#ffffff", band_border_w=0.0),
     "bw": dict(
         font="'Helvetica Neue',Helvetica,Arial,sans-serif",
         webfont="",
         stub_bg="#ffffff", stub_text="#111111",
         stub_border_w=0.3, stub_sep="rgba(0,0,0,0.45)",
         cut="#999999", rule="#cccccc", muted="#444444",
-        ink="#000000", title="#000000", accent="#000000"),
+        ink="#000000", title="#000000", accent="#000000",
+        band_bg="#ffffff", band_text="#111111", band_border_w=0.3),
     "gold": dict(
         font="'Inter','Segoe UI','Helvetica Neue',Arial,'Noto Sans SC',sans-serif",
         webfont="Inter:wght@400;600;700;800;900",
@@ -71,7 +75,8 @@ THEMES = {
         stub_text="#2b2000",
         stub_border_w=0.0, stub_sep="rgba(43,32,0,0.4)",
         cut="#d9c47a", rule="#f0e3b8", muted="#6b5a26",
-        ink="#2b2410", title="#9a7200", accent="#b8860b"),
+        ink="#2b2410", title="#9a7200", accent="#b8860b",
+        band_bg="#c9971c", band_text="#2b2000", band_border_w=0.0),
 }
 
 # --------------------------------------------------------------------------- #
@@ -367,12 +372,53 @@ p, div, span { overflow-wrap: break-word; }
   white-space: nowrap;
 }
 
-.rule {
-  margin-top: auto;
-  border-top: 0.25mm solid ${rule_color};
+.foot { margin-top: auto; }
+.foot .drow {
+  text-align: right;
+  margin-bottom: 0.4mm;
 }
-
-.details { margin-top: 1.0mm; }
+.band {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.2mm;
+  background: ${band_bg};
+  color: ${band_text};
+  border-radius: 1.1mm;
+  padding: 0.55mm 1.3mm;
+  margin-top: 0.6mm;
+  overflow: hidden;
+  ${band_border_css}
+}
+.band-price {
+  font-size: ${band_price_pt}pt;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  line-height: 1.1;
+  white-space: nowrap;
+  min-width: 0;
+}
+.band-no {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7mm;
+  white-space: nowrap;
+  min-width: 0;
+}
+.band-no-label {
+  font-size: ${band_nol_pt}pt;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  margin-right: -0.14em;
+  opacity: 0.85;
+  line-height: 1.1;
+}
+.band-num {
+  font-size: ${band_num_pt}pt;
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+}
 .drow {
   font-size: ${det_pt}pt;
   font-weight: 600;
@@ -490,14 +536,15 @@ def build_html(a, th):
     eff = a["font_scale"] * min(1.0, token_h / 28.5, token_w / 49.5)
     eff = max(0.35, eff)
 
-    # vertical auto-fit: the name row (and any extra detail rows) make the
+    # vertical auto-fit: the name row (and the footer band) make the
     # content stack taller than the fixed cell; scale everything down so the
     # tallest possible ticket still fits its cell.
     names_list = a.get("names_list") or []
     has_names = bool(names_list)
-    n_det = ((1 if a["price"] not in ("", "none", "None") else 0)
-             + (1 if a["draw_date"] not in (None, "", "none", "None") else 0)
-             + (1 if a["split_stub"] else 0))
+    has_price = a["price"] not in ("", "none", "None")
+    dd = a["draw_date"]
+    has_dd = dd is not None and dd not in ("", "none", "None")
+    has_band = has_price or a["split_stub"]
     school_lines = (a["school"].count("|") + 1) if a["school"] else 0
     school_h_per_eff = max(6.2 * a["logo_scale"],
                            school_lines * 4.6 * 0.3528 * 1.38)
@@ -505,8 +552,12 @@ def build_html(a, th):
                + 11.5 * 0.3528            # title, line-height 1
                + 7 * 0.3528 * 1.25        # class line
                + (9 * 0.3528 * 1.3 if has_names else 0)
-               + n_det * 6 * 0.3528 * 1.55)
-    stack_b = (1.2 + 0.8 + (0.6 if has_names else 0) + 0.25 + 1.0 + 1.3 + 1.2)
+               + (6 * 1.6 * 0.3528 * 1.1 if has_band else 0)  # band number line
+               + (6 * 0.3528 * 1.55 if has_dd else 0))         # date row
+    stack_b = (1.2 + 0.8 + (0.6 if has_names else 0)
+               + (0.6 + 0.55 * 2 + 0.35 if has_band else 0)   # band gap + pad + border
+               + (0.4 if has_dd else 0)
+               + 1.3 + 1.2)
     if stack_a * eff + stack_b > token_h:
         eff = max(0.4, (token_h - stack_b) / stack_a)
 
@@ -560,27 +611,29 @@ def build_html(a, th):
     elif logo_html:
         school_html = f'        <div class="school">{logo_html}</div>\n'
 
-    # ---- details rows (price / draw date / body number)
-    det_rows = []
-    if a["price"] not in ("", "none", "None"):
-        det_rows.append(f'          <div class="drow">{esc(a["price_label"])}: '
-                        f'<span class="val">{esc(a["price"])}</span></div>')
-    dd = a["draw_date"]
-    if dd is not None and dd not in ("", "none", "None"):
+    # ---- footer: optional draw-date row, then the price/number band that
+    # gives the buyer's half its own block of theme colour (the stub is torn
+    # off and dropped in the jar; the band is what the buyer keeps looking at)
+    date_row = ""
+    if has_dd:
         if dd in ("_", "blank"):
-            det_rows.append(f'          <div class="drow">{esc(a["draw_date_label"])}:'
-                            f'<span class="blank"></span></div>')
+            date_row = (f'          <div class="drow">{esc(a["draw_date_label"])}:'
+                        f'<span class="blank"></span></div>\n')
         else:
-            det_rows.append(f'          <div class="drow">{esc(a["draw_date_label"])}: '
-                            f'<span class="val">{esc(dd)}</span></div>')
-    if a["split_stub"]:
-        # number on the buyer's half too, so the winning stub can be matched;
-        # literal {num} is expanded after .format() like the stub number
-        det_rows.append('          <div class="drow">No. <span class="val">{num}</span></div>')
-    if det_rows:
-        rule_details = ('\n        <div class="rule"></div>\n'
-                        '        <div class="details">\n'
-                        + "\n".join(det_rows) + "\n        </div>\n")
+            date_row = (f'          <div class="drow">{esc(a["draw_date_label"])}: '
+                        f'<span class="val">{esc(dd)}</span></div>\n')
+    band_html = ""
+    if has_band:
+        price_span = (f'<span class="band-price">{esc(a["price"])}</span>'
+                      if has_price else "")
+        # {num} is expanded after .format() like the stub number
+        no_span = ("<span class=\"band-no\"><span class=\"band-no-label\">No.</span>"
+                   "<span class=\"band-num\">{num}</span></span>"
+                   if a["split_stub"] else "")
+        band_html = f'        <div class="band">{price_span}{no_span}</div>\n'
+    if date_row or band_html:
+        rule_details = ('        <div class="foot">\n'
+                        + date_row + band_html + '        </div>\n')
     else:
         rule_details = "\n"
 
@@ -611,6 +664,10 @@ def build_html(a, th):
     if th["stub_border_w"] > 0 and not a["split_stub"]:
         stub_border_css = (f"border-{boundary}: {mm(th['stub_border_w'])}mm "
                            f"solid {th['ink']};")
+    band_border_css = ""
+    if th["band_border_w"] > 0:
+        band_border_css = (f"border: {mm(th['band_border_w'])}mm "
+                           f"solid {th['ink']};")
     # Tear line between the buyer's half and the jar stub. Drawn on the WHITE
     # body element, not on the gradient stub: a dashed border on a gradient
     # background forces Chromium to emit thousands of tiny path segments
@@ -636,6 +693,10 @@ def build_html(a, th):
         class_pt=pt(7.0 * eff),
         rule_color=th["rule"], det_pt=pt(6.0 * eff), muted=th["muted"],
         accent=th["accent"], blank_w=mm(a["blank_width"]),
+        band_bg=th["band_bg"], band_text=th["band_text"],
+        band_border_css=band_border_css,
+        band_price_pt=pt(6.0 * 1.15 * eff), band_nol_pt=pt(6.0 * 0.8 * eff),
+        band_num_pt=pt(6.0 * 1.6 * eff),
         stub_w=mm(a["stub_width"]), stub_bg=th["stub_bg"], stub_text=th["stub_text"],
         stub_border_css=stub_border_css,
         sp_t=mm(2.1 * pe), party_pt=pt(4.8 * eff), yr_pt=pt(5.6 * eff),
@@ -817,8 +878,8 @@ tips:
     g.add_argument("--party", default="", metavar="YEAR|TEXT",
                    help='stub text, e.g. "2026|CLASS PARTY" (year shown larger)')
     g.add_argument("--price", default="", metavar="TEXT",
-                   help='price value, e.g. "Tk 10"; empty or "none" hides the row')
-    g.add_argument("--price-label", default="Price", dest="price_label", metavar="TEXT")
+                   help='price value shown in the footer band, e.g. "Tk 10";'
+                        ' empty or "none" hides the band')
     g.add_argument("--draw-date", default=None, dest="draw_date", metavar="TEXT",
                    help='date value; "_" = blank fill-in line; "none"/omitted hides the row')
     g.add_argument("--draw-date-label", default="Draw Date", dest="draw_date_label",

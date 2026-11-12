@@ -28,13 +28,15 @@
       cut: [159, 179, 201], rule: [219, 231, 244], muted: [70, 96, 122],
       ink: [14, 47, 82], title: [18, 88, 167], accent: [18, 88, 167],
       stubTop: [18, 88, 167], stubBot: [13, 63, 119],
-      stubText: [255, 255, 255], stubSep: [255, 255, 255], stubSepOpacity: 0.55
+      stubText: [255, 255, 255], stubSep: [255, 255, 255], stubSepOpacity: 0.55,
+      bandBg: [18, 88, 167], bandText: [255, 255, 255]
     },
     gold: {
       cut: [217, 196, 122], rule: [240, 227, 184], muted: [107, 90, 38],
       ink: [43, 36, 16], title: [154, 114, 0], accent: [184, 134, 11],
       stubTop: [242, 201, 76], stubBot: [201, 151, 28],
-      stubText: [43, 32, 0], stubSep: [43, 32, 0], stubSepOpacity: 0.4
+      stubText: [43, 32, 0], stubSep: [43, 32, 0], stubSepOpacity: 0.4,
+      bandBg: [201, 151, 28], bandText: [43, 32, 0]
     }
   };
 
@@ -45,14 +47,14 @@
       stubWidth: 12, title: "RAFFLE DRAW",
       school: "CIVIL AVIATION SCHOOL|& COLLEGE, KURMITOLA",
       classLine: "Class 9 \u00B7 Section D", party: "2026|CLASS PARTY",
-      price: "Tk 10", priceLabel: "Price", numberLabel: "NO.", logoScale: 1.3
+      price: "Tk 10", numberLabel: "NO.", logoScale: 1.3
     },
     vip: {
       theme: "gold", cols: 3, rows: 5, fontScale: 1.2, splitStub: true,
       stubWidth: 12, title: "VIP TICKET",
       school: "CIVIL AVIATION SCHOOL|& COLLEGE, KURMITOLA",
       classLine: "Class 9 \u00B7 Section D", party: "2026|CLASS PARTY",
-      price: "Tk 10", priceLabel: "Price", numberLabel: "NO.",
+      price: "Tk 10", numberLabel: "NO.",
       nameLabel: "", logoScale: 1.3
     }
   };
@@ -145,15 +147,19 @@
     var drawDate = o.drawDate;
     var showDD = drawDate != null && drawDate !== "" && drawDate !== "none" && drawDate !== "None";
 
-    var nDet = (showPrice ? 1 : 0) + (showDD ? 1 : 0) + (splitStub ? 1 : 0);
+    var hasBand = showPrice || splitStub;   // footer band: price + matching no.
+    var hasDD = showDD;                     // small date row above the band
     var schoolLines = o.school ? o.school.split("|") : [];
 
     // vertical auto-fit (port of the stack_a/stack_b shrink in raffle_gen.py)
     var schoolHPerEff = Math.max(6.2 * logoScale,
                                  schoolLines.length * 4.6 * PT2MM * 1.38);
     var stackA = schoolHPerEff + 11.5 * PT2MM + 7 * PT2MM * 1.25 +
-                 (hasNames ? 9 * PT2MM * 1.3 : 0) + nDet * 6 * PT2MM * 1.55;
-    var stackB = 1.2 + 0.8 + (hasNames ? 0.6 : 0) + 0.25 + 1.0 + 1.3 + 1.2;
+                 (hasNames ? 9 * PT2MM * 1.3 : 0) +
+                 (hasBand ? 6 * 1.6 * PT2MM * 1.1 : 0) +
+                 (hasDD ? 6 * PT2MM * 1.55 : 0);
+    var stackB = 1.2 + 0.8 + (hasNames ? 0.6 : 0) +
+                 (hasBand ? 0.6 + 1.1 + 0.35 : 0) + (hasDD ? 0.4 : 0) + 1.3 + 1.2;
     if (stackA * eff + stackB > tokenH) eff = Math.max(0.4, (tokenH - stackB) / stackA);
     var pe = Math.max(0.55, eff);
 
@@ -213,15 +219,15 @@
       });
     }
 
-    // ---- static detail rows (number row is appended per ticket)
+    // ---- static detail rows: only the draw date stays a plain row; the
+    // price moves into the footer band, and the number row is per-ticket
     var detRows = [];
-    if (showPrice) {
-      detRows.push({ label: (o.priceLabel != null ? o.priceLabel : "Price") + ":",
-                     value: String(price) });
-    }
     if (showDD) {
       detRows.push({ label: (o.drawDateLabel || "Draw Date") + ":", value: String(drawDate) });
     }
+    var bandPricePt = detPt * 1.15, bandNolPt = detPt * 0.8,
+        bandNumPt = detPt * 1.6;
+    var bandPadX = 1.3, bandPadY = 0.55, bandGap = 0.6, bandR = 1.1;
 
     var availNameMm = Math.max(8, tokenW - stubWidth - (2.0 + 1.6) * pe - 1.0);
     var nameLabel = o.nameLabel != null ? o.nameLabel : "Name";
@@ -237,6 +243,9 @@
       title: o.title || "", titlePt: titlePt,
       classLine: o.classLine || "", classPt: classPt,
       detPt: detPt, detRows: detRows, splitStub: splitStub,
+      hasBand: hasBand, priceStr: showPrice ? String(price) : "",
+      bandPricePt: bandPricePt, bandNolPt: bandNolPt, bandNumPt: bandNumPt,
+      bandPadX: bandPadX, bandPadY: bandPadY, bandGap: bandGap, bandR: bandR,
       partyLines: partyLines, yrPt: yrPt, partyPt: partyPt,
       noLabelPt: noLabelPt, numPt: numPt,
       numberLabel: o.numberLabel != null ? o.numberLabel : "NO.",
@@ -352,23 +361,76 @@
       }
     }
 
-    // 7) rule + detail rows, pinned to the bottom of the body
-    var rowsAll = L.detRows.slice();
-    if (L.splitStub) rowsAll.push({ label: "No.", value: numStr, isNum: true });
-    if (rowsAll.length) {
+    // 7) footer: optional draw-date row, then the price/number band —
+    //    the buyer's half keeps its own block of theme colour after the
+    //    stub is torn off (mirrors the .foot/.band CSS in raffle_gen.py)
+    var dateRows = L.detRows;              // draw-date rows only
+    if (L.hasBand) {
+      var bandH = L.bandNumPt * 1.1 * PT2MM + L.bandPadY * 2;
+      var bandY0 = Y + tokenH - L.mpB - bandH;
       var detRowH = L.detPt * 1.55 * PT2MM;
-      var detailsTop = Y + tokenH - L.mpB - rowsAll.length * detRowH;
-      doc.setDrawColor(th.rule[0] | 0, th.rule[1] | 0, th.rule[2] | 0);
-      doc.setLineWidth(0.25);
-      doc.line(bodyX0, detailsTop - 1.0, bodyX1, detailsTop - 1.0);
-      for (var ri = 0; ri < rowsAll.length; ri++) {
-        var rb = baselineOf(detailsTop + ri * detRowH, L.detPt, 1.55);
-        var rx = bodyX0;
-        if (rowsAll[ri].label) {
-          rx += drawText(doc, rowsAll[ri].label + " ", bodyX0, rb,
+      for (var ri = 0; ri < dateRows.length; ri++) {
+        var rb = baselineOf(bandY0 - 0.4 - (dateRows.length - ri) * detRowH,
+                            L.detPt, 1.55);
+        var rw = dateRows[ri].label
+          ? textW(doc, dateRows[ri].label + " ", 0) : 0;
+        rw += textW(doc, dateRows[ri].value, 0.03 * L.detPt * PT2MM);
+        var rx = bodyX1 - rw;
+        if (dateRows[ri].label) {
+          rx += drawText(doc, dateRows[ri].label + " ", rx, rb,
                          { size: L.detPt, bold: false, color: th.muted });
         }
-        drawText(doc, rowsAll[ri].value, rx, rb,
+        drawText(doc, dateRows[ri].value, rx, rb,
+                 { size: L.detPt, bold: true, color: th.accent,
+                   cs: 0.03 * L.detPt * PT2MM });
+      }
+      doc.setFillColor(th.bandBg[0] | 0, th.bandBg[1] | 0, th.bandBg[2] | 0);
+      doc.roundedRect(bodyX0, bandY0, bodyX1 - bodyX0, bandH,
+                      L.bandR, L.bandR, "F");
+      // width guard: shrink the band type if price + number don't fit
+      var pPt = L.bandPricePt, nolPt = L.bandNolPt, nPt = L.bandNumPt;
+      var priceW = L.priceStr ? textW(doc, L.priceStr, 0.03 * pPt * PT2MM) : 0;
+      var nolW = L.splitStub ? textW(doc, "No.", 0.14 * nolPt * PT2MM) : 0;
+      var numW = L.splitStub ? textW(doc, numStr, 0.02 * nPt * PT2MM) : 0;
+      var need = priceW + (priceW && nolW ? 1.2 : 0) + nolW +
+                 (nolW ? 0.7 : 0) + numW;
+      var availW = (bodyX1 - bodyX0) - 2 * L.bandPadX;
+      if (need > availW && need > 0) {
+        var bf = availW / need;
+        pPt *= bf; nolPt *= bf; nPt *= bf; numW *= bf;
+      }
+      if (L.priceStr) {
+        drawText(doc, L.priceStr, bodyX0 + L.bandPadX,
+                 baselineOf(bandY0 + (bandH - pPt * 1.1 * PT2MM) / 2, pPt, 1.1),
+                 { size: pPt, bold: true, color: th.bandText,
+                   cs: 0.03 * pPt * PT2MM });
+      }
+      if (L.splitStub) {
+        var numX = bodyX1 - L.bandPadX;
+        var numBase = baselineOf(bandY0 + (bandH - nPt * 1.1 * PT2MM) / 2,
+                                 nPt, 1.1);
+        drawText(doc, numStr, numX, numBase,
+                 { size: nPt, bold: true, color: th.bandText,
+                   cs: 0.02 * nPt * PT2MM, align: "right" });
+        drawText(doc, "No.", numX - numW - 0.7, numBase,
+                 { size: nolPt, bold: true, color: th.bandText,
+                   cs: 0.14 * nolPt * PT2MM, align: "right" });
+      }
+    } else if (dateRows.length) {
+      // no band (no price, no split number): date rows pinned to the bottom
+      var detRowH2 = L.detPt * 1.55 * PT2MM;
+      var top2 = Y + tokenH - L.mpB - dateRows.length * detRowH2;
+      for (var rj = 0; rj < dateRows.length; rj++) {
+        var rb2 = baselineOf(top2 + rj * detRowH2, L.detPt, 1.55);
+        var rw2 = dateRows[rj].label
+          ? textW(doc, dateRows[rj].label + " ", 0) : 0;
+        rw2 += textW(doc, dateRows[rj].value, 0.03 * L.detPt * PT2MM);
+        var rx2 = bodyX1 - rw2;
+        if (dateRows[rj].label) {
+          rx2 += drawText(doc, dateRows[rj].label + " ", rx2, rb2,
+                          { size: L.detPt, bold: false, color: th.muted });
+        }
+        drawText(doc, dateRows[rj].value, rx2, rb2,
                  { size: L.detPt, bold: true, color: th.accent,
                    cs: 0.03 * L.detPt * PT2MM });
       }
